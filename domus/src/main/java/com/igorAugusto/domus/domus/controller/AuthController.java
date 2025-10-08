@@ -1,11 +1,12 @@
 package com.igorAugusto.domus.domus.controller;
 
-import com.igorAugusto.domus.domus.config.JwtTokenProvider;
 import com.igorAugusto.domus.domus.dto.LoginRequest;
 import com.igorAugusto.domus.domus.dto.LoginResponse;
 import com.igorAugusto.domus.domus.dto.RegisterRequest;
+import com.igorAugusto.domus.domus.dto.RegisterResponse;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,23 +21,25 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
+    @Autowired
+    private AuthenticationManager authenticationManager;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-    public AuthController(AuthenticationManager authenticationManager, UserService userService,
+    /*public AuthController(AuthenticationManager authenticationManager, UserService userService,
                           PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
-    }
+    }*/
 
     @PostMapping("/register")
-    public ResponseEntity<LoginResponse> register(@Validated @RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> register(@Validated @RequestBody RegisterRequest request) {
         if (userService.existsByEmail(request.getEmail())) {
-            LoginResponse response = new LoginResponse();
+            RegisterResponse response = new RegisterResponse();
             response.setMessage("E-mail já existe");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
@@ -48,9 +51,7 @@ public class AuthController {
 
         userService.saveUser(user);
 
-        String jwt = jwtTokenProvider.generateToken(user.getEmail(), user.getId());
-        LoginResponse response = new LoginResponse();
-        response.setToken(jwt);
+        RegisterResponse response = new RegisterResponse();
         response.setMessage("Usuário registrado com sucesso");
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -65,10 +66,8 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         User user = (User) userService.loadUserByUsername(request.getEmail());
-        String jwt = jwtTokenProvider.generateToken(user.getEmail(), user.getId());
 
         LoginResponse response = new LoginResponse();
-        response.setToken(jwt);
         response.setMessage("Login bem-sucedido");
 
         return ResponseEntity.ok(response);
