@@ -1,23 +1,22 @@
 package com.igorAugusto.domus.domus.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
 @Data
-@Getter
-@Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class User implements UserDetails {
@@ -40,31 +39,32 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // Sem roles por enquanto, para o MVP
+        // Retorna uma lista de permissões/roles. Para simplicidade, apenas um role fixo.
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override
     public String getUsername() {
-        return email;
+        return this.email; // Usa o email como nome de usuário
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return true;
+        return true; // Conta nunca expira (simplificado)
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return true; // Conta nunca está bloqueada (simplificado)
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true;
+        return true; // Credenciais nunca expiram (simplificado)
     }
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return true; // Conta sempre habilitada (simplificado)
     }
 }
