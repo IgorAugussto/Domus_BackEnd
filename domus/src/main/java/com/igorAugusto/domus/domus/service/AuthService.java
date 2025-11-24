@@ -20,44 +20,32 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    // REGISTRO DE NOVO USUÁRIO
     public AuthResponse register(RegisterRequest request) {
-        // Verifica se email já existe
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email já cadastrado!");
         }
 
-        // Cria novo usuário
         var user = User.builder()
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))  // Criptografa senha!
-                .name(request.getNome())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .name(request.getName())
                 .build();
 
         userRepository.save(user);
-
-        // Gera token
-        var token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user);
 
         return new AuthResponse(token, "Bearer", user.getEmail(), user.getName());
     }
 
-    // LOGIN
     public AuthResponse login(LoginRequest request) {
-        // Autentica usuário (verifica email e senha)
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        // Se chegou aqui, credenciais estão corretas!
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // Gera token
-        var token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user);
 
         return new AuthResponse(token, "Bearer", user.getEmail(), user.getName());
     }

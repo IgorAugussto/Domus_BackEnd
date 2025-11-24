@@ -14,7 +14,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class IncomeService {
+public class OutgoingService {
 
     private final IncomeRepository incomeRepository;
     private final UserRepository userRepository;
