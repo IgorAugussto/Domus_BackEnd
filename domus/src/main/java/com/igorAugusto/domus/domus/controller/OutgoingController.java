@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/outgoing")
+@RequestMapping("/api/costs")
 @RequiredArgsConstructor
 public class OutgoingController {
 
