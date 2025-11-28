@@ -1,0 +1,26 @@
+package com.igorAugusto.domus.domus.repository;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.igorAugusto.domus.domus.entity.Investments;
+
+@Repository
+public interface InvestmentsRepository extends JpaRepository<Investments, Long> {
+
+    // Busca todas as receitas de um usuário
+    List<Investments> findByUserId(Long userId);
+
+    // Busca receitas de um usuário em um período
+    List<Investments> findByUserIdAndDateBetween(Long userId, LocalDate start, LocalDate end);
+
+    // Soma total de receitas de um usuário
+    @Query("SELECT SUM(i.value) FROM Investments i WHERE i.user.id = :userId")
+    BigDecimal sumByUserId(@Param("userId") Long userId);
+}
