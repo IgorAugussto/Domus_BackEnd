@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Income {
+public class Investments {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,13 +25,7 @@ public class Income {
     private BigDecimal value;  // ✅ Use BigDecimal para dinheiro!
 
     @Column(nullable = false)
-    private String description;  // Ex: "Salário de Novembro"
-
-    @Column(nullable = false)
-    private LocalDate date;  // Data que recebeu
-
-    @Column
-    private String category;  // Ex: "Salário", "Freelance", "Investimento"
+    private String typeInvestments;  // Ex: "ITAUSA4"
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
