@@ -1,10 +1,10 @@
 package com.igorAugusto.domus.domus.service;
 
-import com.igorAugusto.domus.domus.dto.IncomeRequest;
-import com.igorAugusto.domus.domus.dto.IncomeResponse;
-import com.igorAugusto.domus.domus.entity.Income;
+import com.igorAugusto.domus.domus.dto.OutgoingRequest;
+import com.igorAugusto.domus.domus.dto.OutgoingResponse;
+import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.User;
-import com.igorAugusto.domus.domus.repository.IncomeRepository;
+import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,19 +14,19 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class IncomeService {
+public class OutgoingService {
 
-    private final IncomeRepository incomeRepository;
+    private final OutgoingRepository outgoingRepository;
     private final UserRepository userRepository;
 
-    // Criar receita
-    public IncomeResponse createIncome(IncomeRequest request, String userEmail) {
+    // Criar despesa
+    public OutgoingResponse createOutgoing(OutgoingRequest request, String userEmail) {
         // 1. Busca o usuário logado
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // 2. Cria a receita
-        Income income = Income.builder()
+        // 2. Cria a despesa
+        Outgoing outgoing = Outgoing.builder()
                 .value(request.getValue())
                 .description(request.getDescription())
                 .date(request.getDate())
@@ -35,41 +35,41 @@ public class IncomeService {
                 .build();
 
         // 3. Salva no banco
-        income = incomeRepository.save(income);
+        outgoing = outgoingRepository.save(outgoing);
 
         // 4. Retorna DTO de resposta
-        return convertToResponse(income);
+        return convertToResponse(outgoing);
     }
 
-    // Listar todas as receitas do usuário
-    public List<IncomeResponse> getAllIncomes(String userEmail) {
+    // Listar todas as despesas do usuário
+    public List<OutgoingResponse> getAllOutgoings(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        return incomeRepository.findByUserId(user.getId())
+        return outgoingRepository.findByUserId(user.getId())
                 .stream()
                 .map(this::convertToResponse)
                 .toList();
     }
 
-    // Calcular total de receitas
-    public BigDecimal getTotalIncome(String userEmail) {
+    // Calcular total de despesas
+    public BigDecimal getTotalOutgoing(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        BigDecimal total = incomeRepository.sumByUserId(user.getId());
+        BigDecimal total = outgoingRepository.sumByUserId(user.getId());
         return total != null ? total : BigDecimal.ZERO;
     }
 
     // Converter Entity para DTO
-    private IncomeResponse convertToResponse(Income income) {
-        return new IncomeResponse(
-                income.getId(),
-                income.getValue(),
-                income.getDescription(),
-                income.getDate(),
-                income.getCategory(),
-                income.getCreatedAt()
+    private OutgoingResponse convertToResponse(Outgoing outgoing) {
+        return new OutgoingResponse(
+                outgoing.getId(),
+                outgoing.getValue(),
+                outgoing.getDescription(),
+                outgoing.getDate(),
+                outgoing.getCategory(),
+                outgoing.getCreatedAt()
         );
     }
 }
