@@ -14,7 +14,6 @@ public class InvestmentsRequest {
 
     @NotNull(message = "Valor é obrigatório")
     private BigDecimal value;
-    @NotNull(message = "Tipo de investimento é obrigatório")
     private String typeInvestments;
     @NotNull(message = "Data de criação é obrigatória")
     private LocalDateTime createdAt;
