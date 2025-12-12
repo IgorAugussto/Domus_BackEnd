@@ -22,6 +22,9 @@ public class IncomeRequest {
 
     @NotNull(message = "Data é obrigatória")
     private LocalDate date;
+    
+    private String frequency;
+
 
     private String category;  // Opcional
 }

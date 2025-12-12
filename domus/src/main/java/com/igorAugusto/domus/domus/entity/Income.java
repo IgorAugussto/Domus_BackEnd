@@ -29,6 +29,10 @@ public class Income {
     private String description;  // Ex: "Salário de Novembro"
 
     @Column(nullable = false)
+    private String frequency;
+
+
+    @Column(nullable = false)
     private LocalDate date;  // Data que recebeu
 
     @Column

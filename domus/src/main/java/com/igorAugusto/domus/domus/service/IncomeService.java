@@ -31,6 +31,7 @@ public class IncomeService {
                 .description(request.getDescription())
                 .date(request.getDate())
                 .category(request.getCategory())
+                .frequency(request.getFrequency())
                 .user(user)
                 .build();
 
@@ -69,7 +70,8 @@ public class IncomeService {
                 income.getDescription(),
                 income.getDate(),
                 income.getCategory(),
-                income.getCreatedAt()
+                income.getCreatedAt(),
+                income.getFrequency()
         );
     }
 }
