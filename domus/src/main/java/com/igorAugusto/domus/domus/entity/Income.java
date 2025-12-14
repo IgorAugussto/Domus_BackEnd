@@ -31,7 +31,6 @@ public class Income {
     @Column(nullable = false)
     private String frequency;
 
-
     @Column(nullable = false)
     private LocalDate date;  // Data que recebeu
 

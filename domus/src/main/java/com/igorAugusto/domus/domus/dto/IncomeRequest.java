@@ -25,6 +25,5 @@ public class IncomeRequest {
     
     private String frequency;
 
-
     private String category;  // Opcional
 }
