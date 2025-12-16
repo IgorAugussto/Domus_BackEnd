@@ -31,6 +31,7 @@ public class OutgoingService {
                 .description(request.getDescription())
                 .date(request.getDate())
                 .category(request.getCategory())
+                .frequency(request.getFrequency())
                 .user(user)
                 .build();
 
@@ -69,7 +70,8 @@ public class OutgoingService {
                 outgoing.getDescription(),
                 outgoing.getDate(),
                 outgoing.getCategory(),
-                outgoing.getCreatedAt()
+                outgoing.getCreatedAt(),
+                outgoing.getFrequency()
         );
     }
 }
