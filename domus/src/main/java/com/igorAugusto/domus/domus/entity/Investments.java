@@ -31,6 +31,9 @@ public class Investments {
     @Column(nullable = false)
     private LocalDate date;
 
+    @Column(nullable = false)
+    private double expectedReturn;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;  // ✅ Cada receita pertence a um usuário
