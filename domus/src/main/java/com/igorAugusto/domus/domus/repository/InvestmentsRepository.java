@@ -22,4 +22,7 @@ public interface InvestmentsRepository extends JpaRepository<Investments, Long> 
     // Soma total de receitas de um usuário
     @Query("SELECT SUM(i.value) FROM Investments i WHERE i.user.id = :userId")
     BigDecimal sumByUserId(@Param("userId") Long userId);
+
+    List<Investments> findAllByUserId(Long userId);
+
 }
