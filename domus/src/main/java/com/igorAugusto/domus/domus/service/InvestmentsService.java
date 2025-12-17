@@ -1,18 +1,16 @@
 package com.igorAugusto.domus.domus.service;
 
-import lombok.RequiredArgsConstructor;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-
 import com.igorAugusto.domus.domus.dto.InvestmentsRequest;
 import com.igorAugusto.domus.domus.dto.InvestmentsResponse;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.InvestmentsRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +27,7 @@ public class InvestmentsService {
         Investments investments = Investments.builder()
                 .value(request.getValue())
                 .typeInvestments(request.getTypeInvestments())
-                .createdAt(request.getCreatedAt())
+                .date(request.getDate())
                 .user(user)
                 .build();
 
