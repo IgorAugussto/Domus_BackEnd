@@ -31,9 +31,7 @@ public class DashboardController {
 
     // 🔥 NOVO ENDPOINT — PROJEÇÃO DO GRÁFICO (12 MESES)
     @GetMapping("/projection")
-    public List<MonthlyProjectionResponse> getProjection(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
+    public List<MonthlyProjectionResponse> getProjection(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
