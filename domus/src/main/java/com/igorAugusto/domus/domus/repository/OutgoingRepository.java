@@ -19,4 +19,6 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
 
     @Query("SELECT SUM(o.value) FROM Outgoing o WHERE o.user.id = :userId")
     BigDecimal sumByUserId(@Param("userId") Long userId);
+
+    List<Outgoing> findAllByUserId(Long userId);
 }

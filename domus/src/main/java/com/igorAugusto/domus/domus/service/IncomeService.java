@@ -29,7 +29,9 @@ public class IncomeService {
         Income income = Income.builder()
                 .value(request.getValue())
                 .description(request.getDescription())
-                .date(request.getDate())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .recurring(request.getRecurring())
                 .category(request.getCategory())
                 .frequency(request.getFrequency())
                 .user(user)
@@ -68,7 +70,9 @@ public class IncomeService {
                 income.getId(),
                 income.getValue(),
                 income.getDescription(),
-                income.getDate(),
+                income.getStartDate(),
+                income.getEndDate(),
+                income.getRecurring(),
                 income.getCategory(),
                 income.getCreatedAt(),
                 income.getFrequency()

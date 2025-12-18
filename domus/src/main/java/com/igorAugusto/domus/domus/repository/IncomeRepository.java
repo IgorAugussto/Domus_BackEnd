@@ -22,4 +22,6 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
     // Soma total de receitas de um usuário
     @Query("SELECT SUM(i.value) FROM Income i WHERE i.user.id = :userId")
     BigDecimal sumByUserId(@Param("userId") Long userId);
+
+    List<Income> findAllByUserId(Long userId);
 }

@@ -15,7 +15,8 @@ public class OutgoingResponse {
     private Long id;
     private BigDecimal value;
     private String description;
-    private LocalDate date;
+    private LocalDate startDate;
+    private Integer durationInMonths;
     private String category;
     private LocalDateTime createdAt;
     private String frequency;

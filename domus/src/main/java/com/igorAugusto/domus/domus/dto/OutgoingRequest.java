@@ -20,7 +20,10 @@ public class OutgoingRequest {
     private String description;
 
     @NotNull(message = "Data é obrigatória")
-    private LocalDate date;
+    private LocalDate starDate;
+    
+    @NotNull(message = "Duração em meses é obrigatória")
+    private Integer durationInMonths;
 
     private String frequency;
 

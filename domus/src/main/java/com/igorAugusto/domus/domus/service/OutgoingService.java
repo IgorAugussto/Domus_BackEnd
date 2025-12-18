@@ -29,7 +29,8 @@ public class OutgoingService {
         Outgoing outgoing = Outgoing.builder()
                 .value(request.getValue())
                 .description(request.getDescription())
-                .date(request.getDate())
+                .startDate(request.getStarDate())
+                .durationInMonths(request.getDurationInMonths())
                 .category(request.getCategory())
                 .frequency(request.getFrequency())
                 .user(user)
@@ -68,7 +69,8 @@ public class OutgoingService {
                 outgoing.getId(),
                 outgoing.getValue(),
                 outgoing.getDescription(),
-                outgoing.getDate(),
+                outgoing.getStartDate(),
+                outgoing.getDurationInMonths(),
                 outgoing.getCategory(),
                 outgoing.getCreatedAt(),
                 outgoing.getFrequency()

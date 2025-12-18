@@ -29,10 +29,13 @@ public class Outgoing {
     private String description;  // Ex: "Conta de Luz"
 
     @Column(nullable = false)
-    private LocalDate date;  // Data que gastou
+    private LocalDate startDate;  // Data que gastou
 
     @Column(nullable = false)
     private String frequency;
+
+    @Column(nullable = false)
+    private Integer durationInMonths;
 
     @Column
     private String category;  // Ex: "Alimentação", "Transporte", "Lazer"
