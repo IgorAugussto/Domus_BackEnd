@@ -31,6 +31,9 @@ public class Outgoing {
     @Column(nullable = false)
     private LocalDate date;  // Data que gastou
 
+    @Column(nullable = false)
+    private String frequency;
+
     @Column
     private String category;  // Ex: "Alimentação", "Transporte", "Lazer"
 

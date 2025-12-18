@@ -7,10 +7,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "income")
+@Table(name = "investments")
 @Data
 @Builder
 @AllArgsConstructor
@@ -26,6 +27,14 @@ public class Investments {
 
     @Column(nullable = false)
     private String typeInvestments;  // Ex: "ITAUSA4"
+
+    @Column(nullable = false)
+    private LocalDate date;
+
+    @Column(nullable = false)
+    private double expectedReturn;
+
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

@@ -18,4 +18,5 @@ public class OutgoingResponse {
     private LocalDate date;
     private String category;
     private LocalDateTime createdAt;
+    private String frequency;
 }
