@@ -18,4 +18,5 @@ public class IncomeResponse {
     private LocalDate date;
     private String category;
     private LocalDateTime createdAt;
+    private String frequency;
 }
