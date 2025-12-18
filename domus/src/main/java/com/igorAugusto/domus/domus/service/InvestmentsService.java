@@ -61,6 +61,8 @@ public class InvestmentsService {
                 investments.getId(),
                 investments.getValue(),
                 investments.getTypeInvestments(),
-                investments.getCreatedAt());
+                investments.getCreatedAt(),
+                investments.getExpectedReturn()
+        );
     }
 }
