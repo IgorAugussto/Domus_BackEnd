@@ -17,5 +17,6 @@ public class InvestmentsResponse {
     private String typeInvestments;
     private LocalDateTime createdAt;
     private double expectedReturn;
+    private String description;
 
 }

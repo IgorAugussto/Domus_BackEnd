@@ -28,6 +28,8 @@ public class InvestmentsService {
                 .value(request.getValue())
                 .typeInvestments(request.getTypeInvestments())
                 .date(request.getDate())
+                .expectedReturn(request.getExpectedReturn())
+                .description(request.getDescription())
                 .user(user)
                 .build();
 
@@ -62,7 +64,8 @@ public class InvestmentsService {
                 investments.getValue(),
                 investments.getTypeInvestments(),
                 investments.getCreatedAt(),
-                investments.getExpectedReturn()
+                investments.getExpectedReturn(),
+                investments.getDescription()
         );
     }
 }

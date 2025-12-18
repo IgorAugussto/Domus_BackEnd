@@ -34,6 +34,8 @@ public class Investments {
     @Column(nullable = false)
     private double expectedReturn;
 
+    private String description;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;  // ✅ Cada receita pertence a um usuário
