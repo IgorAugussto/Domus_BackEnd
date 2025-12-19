@@ -19,12 +19,11 @@ public class DashboardProjectionService {
     private final IncomeRepository incomeRepository;
     private final OutgoingRepository outgoingRepository;
 
-    // 👉👉👉 O CÓDIGO DA ETAPA 5 FICA AQUI 👇👇👇
     public List<MonthlyProjectionResponse> projectNext12Months(Long userId) {
 
         Map<YearMonth, MonthlyProjectionResponse> map = new LinkedHashMap<>();
 
-        // cria os 12 meses
+        // 1️⃣ cria os 12 meses
         for (int i = 0; i < 12; i++) {
             YearMonth ym = YearMonth.now().plusMonths(i);
             map.put(
@@ -38,7 +37,7 @@ public class DashboardProjectionService {
             );
         }
 
-        // aplica incomes
+        // 2️⃣ incomes
         List<Income> incomes = incomeRepository.findAllByUserId(userId);
 
         for (Income income : incomes) {
@@ -67,7 +66,7 @@ public class DashboardProjectionService {
             }
         }
 
-        // aplica outgoings (expenses)
+        // 3️⃣ outgoings
         List<Outgoing> outgoings = outgoingRepository.findAllByUserId(userId);
 
         for (Outgoing out : outgoings) {
@@ -86,3 +85,4 @@ public class DashboardProjectionService {
         return new ArrayList<>(map.values());
     }
 }
+

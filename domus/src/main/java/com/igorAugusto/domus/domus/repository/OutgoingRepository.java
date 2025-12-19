@@ -15,8 +15,6 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
 
     List<Outgoing> findByUserId(Long userId);
 
-    List<Outgoing> findByUserIdAndDateBetween(Long userId, LocalDate start, LocalDate end);
-
     @Query("SELECT SUM(o.value) FROM Outgoing o WHERE o.user.id = :userId")
     BigDecimal sumByUserId(@Param("userId") Long userId);
 
