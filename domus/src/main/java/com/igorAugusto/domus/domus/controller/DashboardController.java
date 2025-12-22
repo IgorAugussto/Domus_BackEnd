@@ -30,11 +30,28 @@ public class DashboardController {
     }
 
     // 🔥 NOVO ENDPOINT — PROJEÇÃO DO GRÁFICO (12 MESES)
-    @GetMapping("/projection")
-    public List<MonthlyProjectionResponse> getProjection(@AuthenticationPrincipal UserDetails userDetails) {
+    @GetMapping("/projection/year")
+    public List<MonthlyProjectionResponse> getYearProjection(
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         return dashboardProjectionService.projectNext12Months(user.getId());
     }
+
+        // ============================
+    // GRÁFICO — ABA MENSAL (30 DIAS)
+    // ============================
+    @GetMapping("/projection/month")
+    public List<MonthlyProjectionResponse> getMonthProjection(
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+        .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        return dashboardProjectionService.projectCurrentMonthDays(user.getId());
+    }
+
+
 }
