@@ -29,12 +29,22 @@ public class OutgoingService {
         Outgoing outgoing = Outgoing.builder()
                 .value(request.getValue())
                 .description(request.getDescription())
-                .startDate(request.getStarDate())
+                .startDate(request.getStartDate())
                 .durationInMonths(request.getDurationInMonths())
                 .category(request.getCategory())
                 .frequency(request.getFrequency())
                 .user(user)
                 .build();
+
+        if (!"One-time".equals(request.getFrequency())) {
+            if (request.getDurationInMonths() == null || request.getDurationInMonths() <= 0) {
+                throw new IllegalArgumentException("Duração é obrigatória para despesas recorrentes");
+            }
+        } else {
+            // One-time → duração = 1 mês
+            request.setDurationInMonths(1);
+        }
+
 
         // 3. Salva no banco
         outgoing = outgoingRepository.save(outgoing);
