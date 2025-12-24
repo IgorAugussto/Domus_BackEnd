@@ -27,7 +27,8 @@ public class InvestmentsService {
         Investments investments = Investments.builder()
                 .value(request.getValue())
                 .typeInvestments(request.getTypeInvestments())
-                .date(request.getDate())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
                 .expectedReturn(request.getExpectedReturn())
                 .description(request.getDescription())
                 .user(user)
@@ -64,6 +65,8 @@ public class InvestmentsService {
                 investments.getValue(),
                 investments.getTypeInvestments(),
                 investments.getCreatedAt(),
+                investments.getStartDate(),
+                investments.getEndDate(),
                 investments.getExpectedReturn(),
                 investments.getDescription()
         );

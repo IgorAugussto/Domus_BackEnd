@@ -2,15 +2,19 @@ package com.igorAugusto.domus.domus.service;
 
 import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.Income;
+import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
+import com.igorAugusto.domus.domus.repository.InvestmentsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -19,6 +23,7 @@ public class DashboardProjectionService {
 
     private final IncomeRepository incomeRepository;
     private final OutgoingRepository outgoingRepository;
+    private final InvestmentsRepository investmentsRepository;
 
     public List<MonthlyProjectionResponse> projectNext12Months(Long userId) {
 
@@ -26,19 +31,16 @@ public class DashboardProjectionService {
 
         YearMonth startMonth = YearMonth.now();
 
-
         // 1️⃣ cria os 12 meses
         for (int i = 0; i < 12; i++) {
             YearMonth ym = YearMonth.now().plusMonths(i);
             projection.put(
-                ym,
-                new MonthlyProjectionResponse(
-                        ym.toString(),
-                        BigDecimal.ZERO,
-                        BigDecimal.ZERO,
-                        BigDecimal.ZERO
-                )
-            );
+                    ym,
+                    new MonthlyProjectionResponse(
+                            ym.toString(),
+                            BigDecimal.ZERO,
+                            BigDecimal.ZERO,
+                            BigDecimal.ZERO));
         }
 
         // 2️⃣ incomes
@@ -95,67 +97,94 @@ public class DashboardProjectionService {
      */
     public List<MonthlyProjectionResponse> projectCurrentMonthDays(Long userId) {
 
-    Map<LocalDate, MonthlyProjectionResponse> projection = new LinkedHashMap<>();
+        Map<LocalDate, MonthlyProjectionResponse> projection = new LinkedHashMap<>();
 
-    YearMonth currentMonth = YearMonth.now();
+        YearMonth currentMonth = YearMonth.now();
 
-    // 1️⃣ Cria todos os dias do mês atual
-    for (int day = 1; day <= currentMonth.lengthOfMonth(); day++) {
-        LocalDate date = currentMonth.atDay(day);
-        projection.put(
-            date,
-            new MonthlyProjectionResponse(
-                date.toString(),
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO
-            )
-        );
-    }
+        // 1️⃣ Cria todos os dias do mês atual
+        for (int day = 1; day <= currentMonth.lengthOfMonth(); day++) {
+            LocalDate date = currentMonth.atDay(day);
+            projection.put(
+                    date,
+                    new MonthlyProjectionResponse(
+                            date.toString(),
+                            BigDecimal.ZERO,
+                            BigDecimal.ZERO,
+                            BigDecimal.ZERO));
+        }
 
-    // 2️⃣ Aplica INCOMES
-    List<Income> incomes = incomeRepository.findAllByUserId(userId);
+        // 2️⃣ Aplica INCOMES
+        List<Income> incomes = incomeRepository.findAllByUserId(userId);
 
-    for (Income income : incomes) {
+        for (Income income : incomes) {
 
-        boolean isRecurringMonthly =
-                Boolean.TRUE.equals(income.getRecurring()) &&
-                "Monthly".equalsIgnoreCase(income.getFrequency());
+            boolean isRecurringMonthly = Boolean.TRUE.equals(income.getRecurring()) &&
+                    "Monthly".equalsIgnoreCase(income.getFrequency());
 
-        for (LocalDate date : projection.keySet()) {
+            for (LocalDate date : projection.keySet()) {
 
-            boolean isActiveInThisDay =
-                    !date.isBefore(income.getStartDate()) &&
-                    (income.getEndDate() == null || !date.isAfter(income.getEndDate()));
+                boolean isActiveInThisDay = !date.isBefore(income.getStartDate()) &&
+                        (income.getEndDate() == null || !date.isAfter(income.getEndDate()));
 
-            if (!isActiveInThisDay) continue;
+                if (!isActiveInThisDay)
+                    continue;
 
-            if (isRecurringMonthly) {
-                MonthlyProjectionResponse item = projection.get(date);
-                item.setIncome(item.getIncome().add(income.getValue()));
+                if (isRecurringMonthly) {
+                    MonthlyProjectionResponse item = projection.get(date);
+                    item.setIncome(item.getIncome().add(income.getValue()));
+                }
             }
         }
-    }
 
-    // 3️⃣ Aplica OUTGOINGS (mesma lógica)
-    List<Outgoing> outgoings = outgoingRepository.findAllByUserId(userId);
+        // 3️⃣ Aplica OUTGOINGS (mesma lógica)
+        List<Outgoing> outgoings = outgoingRepository.findAllByUserId(userId);
 
-    for (Outgoing outgoing : outgoings) {
+        for (Outgoing outgoing : outgoings) {
 
-        LocalDate start = outgoing.getStartDate();
-        LocalDate end = start.plusMonths(outgoing.getDurationInMonths());
+            LocalDate start = outgoing.getStartDate();
+            LocalDate end = start.plusMonths(outgoing.getDurationInMonths());
 
-        for (LocalDate date : projection.keySet()) {
-            if (!date.isBefore(start) && !date.isAfter(end)) {
-                MonthlyProjectionResponse item = projection.get(date);
-                item.setExpenses(item.getExpenses().add(outgoing.getValue()));
+            for (LocalDate date : projection.keySet()) {
+                if (!date.isBefore(start) && !date.isAfter(end)) {
+                    MonthlyProjectionResponse item = projection.get(date);
+                    item.setExpenses(item.getExpenses().add(outgoing.getValue()));
+                }
             }
         }
+
+        // 4️⃣ INVESTIMENTOS (🔥 PARTE NOVA 🔥)
+        List<Investments> investments = investmentsRepository.findAllByUserId(userId);
+
+        for (Investments inv : investments) {
+
+            BigDecimal initialValue = inv.getValue();
+            BigDecimal monthlyRate = BigDecimal
+            .valueOf(inv.getExpectedReturn())
+            .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
+            .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
+
+            YearMonth investStart = YearMonth.from(inv.getStartDate());
+            YearMonth investEnd = YearMonth.from(inv.getEndDate());
+
+            for (YearMonth ym : projection.keySet()) {
+
+                if (!ym.isBefore(investStart) && !ym.isAfter(investEnd)) {
+
+                    long monthsPassed = ChronoUnit.MONTHS.between(investStart, ym);
+
+                    BigDecimal growthFactor = BigDecimal.ONE.add(monthlyRate)
+                            .pow((int) monthsPassed, MathContext.DECIMAL64);
+
+                    BigDecimal currentValue = initialValue.multiply(growthFactor, MathContext.DECIMAL64);
+
+                    MonthlyProjectionResponse item = projection.get(ym);
+                    item.setInvestments(
+                            item.getInvestments().add(currentValue));
+                }
+            }
+        }
+
+        return new ArrayList<>(projection.values());
     }
 
-    return new ArrayList<>(projection.values());
 }
-
-
-}
-

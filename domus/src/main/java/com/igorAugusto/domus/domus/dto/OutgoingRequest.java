@@ -21,7 +21,6 @@ public class OutgoingRequest {
 
     @NotNull(message = "Data é obrigatória")
     private LocalDate startDate;
-    
 
     private Integer durationInMonths;
 

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,6 +17,8 @@ public class InvestmentsResponse {
     private BigDecimal value;  // ✅ Use BigDecimal para dinheiro!
     private String typeInvestments;
     private LocalDateTime createdAt;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private double expectedReturn;
     private String description;
 
