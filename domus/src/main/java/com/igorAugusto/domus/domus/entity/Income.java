@@ -34,7 +34,6 @@ public class Income {
     @Column(nullable = false)
     private LocalDate startDate;
 
-    @Column(nullable = true)
     private LocalDate endDate;  
     
     private Boolean recurring;

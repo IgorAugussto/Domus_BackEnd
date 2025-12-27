@@ -21,7 +21,7 @@ public class IncomeRequest {
     @NotNull(message = "Data é obrigatória")
     private LocalDate startDate;
 
-    @NotNull(message = "Data é obrigatória")
+    
     private LocalDate endDate; 
 
     private Boolean recurring;
