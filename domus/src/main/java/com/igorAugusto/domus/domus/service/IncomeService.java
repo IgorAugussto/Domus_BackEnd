@@ -16,66 +16,106 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IncomeService {
 
-    private final IncomeRepository incomeRepository;
-    private final UserRepository userRepository;
+        private final IncomeRepository incomeRepository;
+        private final UserRepository userRepository;
 
-    // Criar receita
-    public IncomeResponse createIncome(IncomeRequest request, String userEmail) {
-        // 1. Busca o usuário logado
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        // Criar receita
+        public IncomeResponse createIncome(IncomeRequest request, String userEmail) {
+                // 1. Busca o usuário logado
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // 2. Cria a receita
-        Income income = Income.builder()
-                .value(request.getValue())
-                .description(request.getDescription())
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .recurring(request.getRecurring())
-                .category(request.getCategory())
-                .frequency(request.getFrequency())
-                .user(user)
-                .build();
+                // 2. Cria a receita
+                Income income = Income.builder()
+                                .value(request.getValue())
+                                .description(request.getDescription())
+                                .startDate(request.getStartDate())
+                                .endDate(request.getEndDate())
+                                .recurring(request.getRecurring())
+                                .category(request.getCategory())
+                                .frequency(request.getFrequency())
+                                .user(user)
+                                .build();
 
-        // 3. Salva no banco
-        income = incomeRepository.save(income);
+                // 3. Salva no banco
+                income = incomeRepository.save(income);
 
-        // 4. Retorna DTO de resposta
-        return convertToResponse(income);
-    }
+                // 4. Retorna DTO de resposta
+                return convertToResponse(income);
+        }
 
-    // Listar todas as receitas do usuário
-    public List<IncomeResponse> getAllIncomes(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        // Listar todas as receitas do usuário
+        public List<IncomeResponse> getAllIncomes(String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        return incomeRepository.findByUserId(user.getId())
-                .stream()
-                .map(this::convertToResponse)
-                .toList();
-    }
+                return incomeRepository.findByUserId(user.getId())
+                                .stream()
+                                .map(this::convertToResponse)
+                                .toList();
+        }
 
-    // Calcular total de receitas
-    public BigDecimal getTotalIncome(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        // Calcular total de receitas
+        public BigDecimal getTotalIncome(String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        BigDecimal total = incomeRepository.sumByUserId(user.getId());
-        return total != null ? total : BigDecimal.ZERO;
-    }
+                BigDecimal total = incomeRepository.sumByUserId(user.getId());
+                return total != null ? total : BigDecimal.ZERO;
+        }
 
-    // Converter Entity para DTO
-    private IncomeResponse convertToResponse(Income income) {
-        return new IncomeResponse(
-                income.getId(),
-                income.getValue(),
-                income.getDescription(),
-                income.getStartDate(),
-                income.getEndDate(),
-                income.getRecurring(),
-                income.getCategory(),
-                income.getCreatedAt(),
-                income.getFrequency()
-        );
-    }
+        public IncomeResponse updateIncome(
+                        Long incomeId,
+                        IncomeRequest request,
+                        String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+                Income income = incomeRepository.findById(incomeId)
+                                .orElseThrow(() -> new RuntimeException("Income não encontrada"));
+
+                if (!income.getUser().getId().equals(user.getId())) {
+                        throw new RuntimeException("Acesso negado");
+                }
+
+                income.setValue(request.getValue());
+                income.setDescription(request.getDescription());
+                income.setStartDate(request.getStartDate());
+                income.setEndDate(request.getEndDate());
+                income.setFrequency(request.getFrequency());
+                income.setCategory(request.getCategory());
+                income.setRecurring(request.getRecurring());
+
+                Income updated = incomeRepository.save(income);
+
+                return convertToResponse(updated);
+        }
+
+        public void deleteIncome(Long incomeId, String userEmail) {
+                User user = userRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+                Income income = incomeRepository.findById(incomeId)
+                                .orElseThrow(() -> new RuntimeException("Income não encontrada"));
+
+                if (!income.getUser().getId().equals(user.getId())) {
+                        throw new RuntimeException("Acesso negado");
+                }
+
+                incomeRepository.delete(income);
+        }
+
+        // Converter Entity para DTO
+        private IncomeResponse convertToResponse(Income income) {
+                return new IncomeResponse(
+                                income.getId(),
+                                income.getValue(),
+                                income.getDescription(),
+                                income.getStartDate(),
+                                income.getEndDate(),
+                                income.getRecurring(),
+                                income.getCategory(),
+                                income.getCreatedAt(),
+                                income.getFrequency());
+        }
 }
