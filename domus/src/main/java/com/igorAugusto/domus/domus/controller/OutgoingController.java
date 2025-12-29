@@ -1,5 +1,7 @@
 package com.igorAugusto.domus.domus.controller;
 
+import com.igorAugusto.domus.domus.dto.IncomeRequest;
+import com.igorAugusto.domus.domus.dto.IncomeResponse;
 import com.igorAugusto.domus.domus.dto.OutgoingRequest;
 import com.igorAugusto.domus.domus.dto.OutgoingResponse;
 import com.igorAugusto.domus.domus.service.OutgoingService;
@@ -51,5 +53,22 @@ public class OutgoingController {
                 outgoingService.getTotalOutgoing(userDetails.getUsername())
         );
     }
+
+    @PutMapping("/{id}")
+        public ResponseEntity<OutgoingResponse> updateOutgoing(
+                        @PathVariable Long id,
+                        @RequestBody @Valid OutgoingRequest request,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                return ResponseEntity.ok(
+                                outgoingService.updateOutgoing(id, request, userDetails.getUsername()));
+        }
+
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> deleteIncome(
+                        @PathVariable Long id,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                outgoingService.deleteOutgoing(id, userDetails.getUsername());
+                return ResponseEntity.noContent().build();
+        }
 }
 

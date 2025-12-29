@@ -7,10 +7,12 @@ import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -25,13 +27,27 @@ public class IncomeService {
                 User user = userRepository.findByEmail(userEmail)
                                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
+                boolean isRecurring = false;
+                LocalDate endDate = request.getEndDate();
+                LocalDate startDate = request.getStartDate();
+
+                if ("Monthly".equals(request.getFrequency())) {
+                        isRecurring = true;
+
+                        if (startDate == null) {
+                                throw new IllegalArgumentException("Data de início é obrigatório para receitas recorrentes");
+                        }
+
+                        endDate = startDate.plusYears(1);
+                }
+
                 // 2. Cria a receita
                 Income income = Income.builder()
                                 .value(request.getValue())
                                 .description(request.getDescription())
-                                .startDate(request.getStartDate())
-                                .endDate(request.getEndDate())
-                                .recurring(request.getRecurring())
+                                .startDate(startDate)
+                                .endDate(endDate)
+                                .recurring(isRecurring)
                                 .category(request.getCategory())
                                 .frequency(request.getFrequency())
                                 .user(user)

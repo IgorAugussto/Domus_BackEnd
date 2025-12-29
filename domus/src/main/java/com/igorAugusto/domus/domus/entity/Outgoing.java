@@ -34,7 +34,7 @@ public class Outgoing {
     @Column(nullable = false)
     private String frequency;
 
-    @Column(nullable = false)
+    @Column(name = "duration_in_months", nullable = false)
     private Integer durationInMonths;
 
     @Column
