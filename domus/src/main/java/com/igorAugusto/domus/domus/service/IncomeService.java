@@ -80,10 +80,7 @@ public class IncomeService {
                 return total != null ? total : BigDecimal.ZERO;
         }
 
-        public IncomeResponse updateIncome(
-                        Long incomeId,
-                        IncomeRequest request,
-                        String userEmail) {
+        public IncomeResponse updateIncome(Long incomeId, IncomeRequest request, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
                                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
@@ -94,13 +91,27 @@ public class IncomeService {
                         throw new RuntimeException("Acesso negado");
                 }
 
+                boolean isRecurring = false;
+                LocalDate endDate = request.getEndDate();
+                LocalDate startDate = request.getStartDate();
+
+                if ("Monthly".equals(request.getFrequency())) {
+                        isRecurring = true;
+
+                        if (startDate == null) {
+                                throw new IllegalArgumentException("Data de início é obrigatório para receitas recorrentes");
+                        }
+
+                        endDate = startDate.plusYears(1);
+                }
+
                 income.setValue(request.getValue());
                 income.setDescription(request.getDescription());
-                income.setStartDate(request.getStartDate());
-                income.setEndDate(request.getEndDate());
+                income.setStartDate(startDate);
+                income.setEndDate(endDate);
                 income.setFrequency(request.getFrequency());
                 income.setCategory(request.getCategory());
-                income.setRecurring(request.getRecurring());
+                income.setRecurring(isRecurring);
 
                 Income updated = incomeRepository.save(income);
 
