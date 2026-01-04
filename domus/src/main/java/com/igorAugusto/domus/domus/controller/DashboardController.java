@@ -2,16 +2,18 @@ package com.igorAugusto.domus.domus.controller;
 
 import com.igorAugusto.domus.domus.dto.DashboardSummaryResponse;
 import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
-import com.igorAugusto.domus.domus.service.DashboardProjectionService;
-import com.igorAugusto.domus.domus.service.DashboardService;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.UserRepository;
-
-
+import com.igorAugusto.domus.domus.service.DashboardProjectionService;
+import com.igorAugusto.domus.domus.service.DashboardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -52,6 +54,18 @@ public class DashboardController {
 
         return dashboardProjectionService.projectCurrentMonthDays(user.getId());
     }
+
+    @GetMapping("/summary/monthly")
+    public ResponseEntity<?> getMonthlySummary(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) String month
+    ) {
+        System.out.println("MONTH RAW = [" + month + "]");
+        System.out.println("USER = " + userDetails.getUsername());
+
+        return ResponseEntity.ok("OK");
+    }
+
 
 
 }

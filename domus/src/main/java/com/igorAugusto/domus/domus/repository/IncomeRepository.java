@@ -18,21 +18,21 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
 
     // Busca receitas de um usuário em um período
     List<Income> findByUserIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-        Long userId,
-        LocalDate end,
-        LocalDate start
+            Long userId,
+            LocalDate end,
+            LocalDate start
     );
 
     @Query("""
-        SELECT COALESCE(SUM(i.value), 0)
-        FROM Income i
-        WHERE i.user.id = :userId
-          AND i.startDate <= :date
-          AND (i.endDate IS NULL OR i.endDate >= :date)
-    """)
+                SELECT COALESCE(SUM(i.value), 0)
+                FROM Income i
+                WHERE i.user.id = :userId
+                  AND i.startDate <= :date
+                  AND (i.endDate IS NULL OR i.endDate >= :date)
+            """)
     BigDecimal sumMonthlyIncome(
-        @Param("userId") Long userId,
-        @Param("date") LocalDate date
+            @Param("userId") Long userId,
+            @Param("date") LocalDate date
     );
 
 
@@ -41,4 +41,18 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
     BigDecimal sumByUserId(@Param("userId") Long userId);
 
     List<Income> findAllByUserId(Long userId);
+
+    @Query("""
+        SELECT COALESCE(SUM(i.value), 0)
+        FROM Income i
+        WHERE i.user.id = :userId
+          AND i.startDate BETWEEN :start AND :end
+    """)
+    BigDecimal sumByUserIdAndStartDateBetween(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+
 }

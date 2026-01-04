@@ -2,7 +2,6 @@ package com.igorAugusto.domus.domus.service;
 
 import com.igorAugusto.domus.domus.dto.DashboardMonthlySummaryResponse;
 import com.igorAugusto.domus.domus.dto.DashboardSummaryResponse;
-import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
@@ -14,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -82,51 +82,48 @@ public class DashboardService {
 
         Long userId = user.getId();
 
-        /*
-         * ============================
-         * 1️⃣ BUSCA PROJEÇÃO DOS MESES
-         * ============================
-         */
-        // Reaproveitamos a projeção já existente
-        // (fonte única da verdade para gráfico + lógica mensal)
-        List<MonthlyProjectionResponse> projections =
-                dashboardProjectionService.projectNext12Months(userId);
+        YearMonth resolvedMonth =
+                (targetMonth != null) ? targetMonth : YearMonth.now();
 
-        BigDecimal accumulatedNetWorth = BigDecimal.ZERO;
+        LocalDate startDate = targetMonth.atDay(1);
+        LocalDate endDate = targetMonth.atEndOfMonth();
 
-        BigDecimal monthIncome = BigDecimal.ZERO;
-        BigDecimal monthExpenses = BigDecimal.ZERO;
-        BigDecimal monthInvestments = BigDecimal.ZERO;
+        BigDecimal monthIncome =
+                defaultZero(
+                        incomeRepository.sumByUserIdAndStartDateBetween(
+                                userId,
+                                startDate,
+                                endDate
+                        )
+                );
 
-        for (MonthlyProjectionResponse item : projections) {
+        BigDecimal monthExpenses =
+                defaultZero(
+                        costRepository.sumByUserIdAndStartDateBetween(
+                                userId,
+                                startDate,
+                                endDate
+                        )
+                );
 
-            YearMonth itemMonth = YearMonth.parse(item.getMonth());
+        BigDecimal monthInvestments =
+                defaultZero(
+                        investmentsRepository.sumByUserIdAndStartDateBetween(
+                                userId,
+                                startDate,
+                                endDate
+                        )
+                );
 
-            // 🔹 acumula mês a mês
-            accumulatedNetWorth = accumulatedNetWorth
-                    .add(item.getIncome())
-                    .subtract(item.getExpenses());
+        BigDecimal netWorth =
+                monthIncome
+                        .subtract(monthExpenses)
+                        .add(monthInvestments);
 
-            // 🔹 quando chegar no mês alvo
-            if (itemMonth.equals(targetMonth)) {
-
-                monthIncome = item.getIncome();
-                monthExpenses = item.getExpenses();
-                monthInvestments = item.getInvestments();
-
-                break;
-            }
-        }
-
-        /*
-         * ============================
-         * 2️⃣ SAVINGS RATE
-         * ============================
-         */
         BigDecimal savingsRate = BigDecimal.ZERO;
-
         if (monthIncome.compareTo(BigDecimal.ZERO) > 0) {
-            savingsRate = accumulatedNetWorth
+            savingsRate = monthIncome
+                    .subtract(monthExpenses)
                     .divide(monthIncome, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100));
         }
@@ -136,12 +133,10 @@ public class DashboardService {
                 monthIncome,
                 monthExpenses,
                 monthInvestments,
-                accumulatedNetWorth,
+                netWorth,
                 savingsRate
         );
     }
-
-
 
     private BigDecimal defaultZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
