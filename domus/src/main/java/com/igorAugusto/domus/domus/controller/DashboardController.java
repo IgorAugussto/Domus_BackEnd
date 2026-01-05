@@ -1,5 +1,6 @@
 package com.igorAugusto.domus.domus.controller;
 
+import com.igorAugusto.domus.domus.dto.DashboardMonthlySummaryResponse;
 import com.igorAugusto.domus.domus.dto.DashboardSummaryResponse;
 import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.User;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.YearMonth;
 import java.util.List;
 
 @RestController
@@ -34,38 +36,43 @@ public class DashboardController {
     // 🔥 NOVO ENDPOINT — PROJEÇÃO DO GRÁFICO (12 MESES)
     @GetMapping("/projection/year")
     public List<MonthlyProjectionResponse> getYearProjection(
-        @AuthenticationPrincipal UserDetails userDetails
-    ) {
+            @AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         return dashboardProjectionService.projectNext12Months(user.getId());
     }
 
-        // ============================
+    // ============================
     // GRÁFICO — ABA MENSAL (30 DIAS)
     // ============================
     @GetMapping("/projection/month")
     public List<MonthlyProjectionResponse> getMonthProjection(
-        @AuthenticationPrincipal UserDetails userDetails
-    ) {
+            @AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByEmail(userDetails.getUsername())
-        .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         return dashboardProjectionService.projectCurrentMonthDays(user.getId());
     }
 
     @GetMapping("/summary/monthly")
-    public ResponseEntity<?> getMonthlySummary(
+    public ResponseEntity<DashboardMonthlySummaryResponse> getMonthlySummary(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) String month
-    ) {
-        System.out.println("MONTH RAW = [" + month + "]");
-        System.out.println("USER = " + userDetails.getUsername());
+            @RequestParam(required = false) String month) {
+        YearMonth resolvedMonth;
 
-        return ResponseEntity.ok("OK");
+        try {
+            resolvedMonth = (month != null && !month.isBlank())
+                    ? YearMonth.parse(month.trim())
+                    : YearMonth.now();
+        } catch (Exception e) {
+            resolvedMonth = YearMonth.now();
+        }
+
+        return ResponseEntity.ok(
+                dashboardService.getMonthlySummary(
+                        userDetails.getUsername(),
+                        resolvedMonth));
     }
-
-
 
 }
