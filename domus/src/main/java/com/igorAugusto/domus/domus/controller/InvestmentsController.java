@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+
 import com.igorAugusto.domus.domus.dto.InvestmentsRequest;
 import com.igorAugusto.domus.domus.dto.InvestmentsResponse;
 import com.igorAugusto.domus.domus.service.InvestmentsService;
@@ -47,11 +48,27 @@ public class InvestmentsController {
     // GET /api/income/total - Total de receitas
     @GetMapping("/total")
     public ResponseEntity<BigDecimal> getTotalInvestments(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
+        @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(
                 investmentsService.getTotalInvestments(userDetails.getUsername())
         );
     }
+
+    @PutMapping("/{id}")
+        public ResponseEntity<InvestmentsResponse> updateInvestment(
+                        @PathVariable Long id,
+                        @RequestBody @Valid InvestmentsRequest request,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+                return ResponseEntity.ok(
+                                investmentsService.updateInvestment(id, request, userDetails.getUsername()));
+        }
+
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> deleteInvestment(
+                @PathVariable Long id,
+                @AuthenticationPrincipal UserDetails userDetails) {
+                        investmentsService.deleteInvestment(id, userDetails.getUsername());
+                        return ResponseEntity.noContent().build();
+        }
     
 }

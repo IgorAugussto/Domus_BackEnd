@@ -1,18 +1,20 @@
 package com.igorAugusto.domus.domus.service;
 
+import com.igorAugusto.domus.domus.dto.DashboardMonthlySummaryResponse;
 import com.igorAugusto.domus.domus.dto.DashboardSummaryResponse;
+import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.User;
-import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
 import com.igorAugusto.domus.domus.repository.InvestmentsRepository;
+import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -23,6 +25,7 @@ public class DashboardService {
     private final OutgoingRepository costRepository;
     private final InvestmentsRepository investmentsRepository;
     private final UserRepository userRepository;
+    private final DashboardProjectionService dashboardProjectionService;
 
     public DashboardSummaryResponse getSummary(String email) {
 
@@ -68,6 +71,44 @@ public class DashboardService {
                 savingsRate
         );
     }
+
+    public DashboardMonthlySummaryResponse getMonthlySummary(
+            String email,
+            YearMonth month
+    ) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow();
+
+        MonthlyProjectionResponse projection =
+                dashboardProjectionService
+                        .projectNext12Months(user.getId())
+                        .stream()
+                        .filter(p -> YearMonth.parse(p.getMonth()).equals(month))
+                        .findFirst()
+                        .orElseThrow();
+
+        BigDecimal income = projection.getIncome();
+        BigDecimal expenses = projection.getExpenses();
+        BigDecimal investments = projection.getInvestments();
+
+        BigDecimal netWorth = income.subtract(expenses).add(investments);
+
+        BigDecimal savingsRate = income.compareTo(BigDecimal.ZERO) > 0
+                ? income.subtract(expenses)
+                .divide(income, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                : BigDecimal.ZERO;
+
+        return new DashboardMonthlySummaryResponse(
+                month.toString(),
+                income,
+                expenses,
+                investments,
+                netWorth,
+                savingsRate
+        );
+    }
+
 
     private BigDecimal defaultZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;

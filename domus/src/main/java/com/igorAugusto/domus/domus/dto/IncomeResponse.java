@@ -15,7 +15,9 @@ public class IncomeResponse {
     private Long id;
     private BigDecimal value;
     private String description;
-    private LocalDate date;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private Boolean recurring;
     private String category;
     private LocalDateTime createdAt;
     private String frequency;
