@@ -19,7 +19,12 @@ public class IncomeRequest {
     private String description;
 
     @NotNull(message = "Data é obrigatória")
-    private LocalDate date;
+    private LocalDate startDate;
+
+    
+    private LocalDate endDate; 
+
+    private Boolean recurring;
     
     private String frequency;
 

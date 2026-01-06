@@ -32,7 +32,11 @@ public class Income {
     private String frequency;
 
     @Column(nullable = false)
-    private LocalDate date;  // Data que recebeu
+    private LocalDate startDate;
+
+    private LocalDate endDate;  
+    
+    private Boolean recurring;
 
     @Column
     private String category;  // Ex: "Salário", "Freelance", "Investimento"

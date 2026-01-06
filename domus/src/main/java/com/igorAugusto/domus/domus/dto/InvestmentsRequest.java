@@ -18,9 +18,12 @@ public class InvestmentsRequest {
     @NotNull(message = "Tipo de investimento é obrigatório")
     private String typeInvestments;
 
-    @NotNull(message = "Data de criação é obrigatória")
-    private LocalDate date;
-    
+    @NotNull(message = "Data de início é obrigatória")
+    private LocalDate startDate;
+
+    @NotNull(message = "Data de término é obrigatória")
+    private LocalDate endDate;
+
     private String description;
 
     @NotNull(message = "Retorno esperado é obrigatório")

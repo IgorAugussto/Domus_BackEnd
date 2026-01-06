@@ -25,4 +25,18 @@ public interface InvestmentsRepository extends JpaRepository<Investments, Long> 
 
     List<Investments> findAllByUserId(Long userId);
 
+    @Query("""
+        SELECT COALESCE(SUM(i.value), 0)
+        FROM Investments i
+        WHERE i.user.id = :userId
+          AND i.startDate BETWEEN :startDate AND :endDate
+    """)
+    BigDecimal sumByUserIdAndStartDateBetween(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+
+
 }

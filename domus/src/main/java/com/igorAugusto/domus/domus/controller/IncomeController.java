@@ -18,36 +18,48 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IncomeController {
 
-    private final IncomeService incomeService;
+        private final IncomeService incomeService;
 
-    // POST /api/income - Criar receita
-    @PostMapping
-    public ResponseEntity<IncomeResponse> createIncome(
-            @RequestBody @Valid IncomeRequest request,
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        return ResponseEntity.ok(
-                incomeService.createIncome(request, userDetails.getUsername())
-        );
-    }
+        // POST /api/income - Criar receita
+        @PostMapping
+        public ResponseEntity<IncomeResponse> createIncome(
+                @RequestBody @Valid IncomeRequest request,
+                @AuthenticationPrincipal UserDetails userDetails) {
+                return ResponseEntity.ok(
+                        incomeService.createIncome(request, userDetails.getUsername()));
+        }
 
-    // GET /api/income - Listar receitas
-    @GetMapping
-    public ResponseEntity<List<IncomeResponse>> getAllIncomes(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        return ResponseEntity.ok(
-                incomeService.getAllIncomes(userDetails.getUsername())
-        );
-    }
+        // GET /api/income - Listar receitas
+        @GetMapping
+        public ResponseEntity<List<IncomeResponse>> getAllIncomes(
+                @AuthenticationPrincipal UserDetails userDetails) {
+                return ResponseEntity.ok(
+                        incomeService.getAllIncomes(userDetails.getUsername()));
+        }
 
-    // GET /api/income/total - Total de receitas
-    @GetMapping("/total")
-    public ResponseEntity<BigDecimal> getTotalIncome(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        return ResponseEntity.ok(
-                incomeService.getTotalIncome(userDetails.getUsername())
-        );
-    }
+        // GET /api/income/total - Total de receitas
+        @GetMapping("/total")
+        public ResponseEntity<BigDecimal> getTotalIncome(
+                @AuthenticationPrincipal UserDetails userDetails) {
+                return ResponseEntity.ok(
+                        incomeService.getTotalIncome(userDetails.getUsername()));
+        }
+
+        @PutMapping("/{id}")
+        public ResponseEntity<IncomeResponse> updateIncome(
+                @PathVariable Long id,
+                @RequestBody @Valid IncomeRequest request,
+                @AuthenticationPrincipal UserDetails userDetails) {
+                return ResponseEntity.ok(
+                        incomeService.updateIncome(id, request, userDetails.getUsername()));
+        }
+
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> deleteIncome(
+                @PathVariable Long id,
+                @AuthenticationPrincipal UserDetails userDetails) {
+                incomeService.deleteIncome(id, userDetails.getUsername());
+                return ResponseEntity.noContent().build();
+        }
+
 }
