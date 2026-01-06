@@ -24,7 +24,7 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
         SELECT COALESCE(SUM(o.value), 0)
         FROM Outgoing o
         WHERE o.user.id = :userId
-          AND o.startDate BETWEEN :start AND :end
+          AND o.startDate BETWEEN :startDate AND :endDate
     """)
     BigDecimal sumByUserIdAndStartDateBetween(
             @Param("userId") Long userId,

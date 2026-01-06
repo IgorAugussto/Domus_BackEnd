@@ -46,7 +46,7 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
         SELECT COALESCE(SUM(i.value), 0)
         FROM Income i
         WHERE i.user.id = :userId
-          AND i.startDate BETWEEN :start AND :end
+          AND i.startDate BETWEEN :startDate AND :endDate
     """)
     BigDecimal sumByUserIdAndStartDateBetween(
             @Param("userId") Long userId,

@@ -2,6 +2,7 @@ package com.igorAugusto.domus.domus.service;
 
 import com.igorAugusto.domus.domus.dto.DashboardMonthlySummaryResponse;
 import com.igorAugusto.domus.domus.dto.DashboardSummaryResponse;
+import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -74,69 +74,41 @@ public class DashboardService {
 
     public DashboardMonthlySummaryResponse getMonthlySummary(
             String email,
-            YearMonth targetMonth
+            YearMonth month
     ) {
-
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow();
 
-        Long userId = user.getId();
+        MonthlyProjectionResponse projection =
+                dashboardProjectionService
+                        .projectNext12Months(user.getId())
+                        .stream()
+                        .filter(p -> YearMonth.parse(p.getMonth()).equals(month))
+                        .findFirst()
+                        .orElseThrow();
 
-        YearMonth resolvedMonth =
-                (targetMonth != null) ? targetMonth : YearMonth.now();
+        BigDecimal income = projection.getIncome();
+        BigDecimal expenses = projection.getExpenses();
+        BigDecimal investments = projection.getInvestments();
 
-        LocalDate startDate = targetMonth.atDay(1);
-        LocalDate endDate = targetMonth.atEndOfMonth();
+        BigDecimal netWorth = income.subtract(expenses).add(investments);
 
-        BigDecimal monthIncome =
-                defaultZero(
-                        incomeRepository.sumByUserIdAndStartDateBetween(
-                                userId,
-                                startDate,
-                                endDate
-                        )
-                );
-
-        BigDecimal monthExpenses =
-                defaultZero(
-                        costRepository.sumByUserIdAndStartDateBetween(
-                                userId,
-                                startDate,
-                                endDate
-                        )
-                );
-
-        BigDecimal monthInvestments =
-                defaultZero(
-                        investmentsRepository.sumByUserIdAndStartDateBetween(
-                                userId,
-                                startDate,
-                                endDate
-                        )
-                );
-
-        BigDecimal netWorth =
-                monthIncome
-                        .subtract(monthExpenses)
-                        .add(monthInvestments);
-
-        BigDecimal savingsRate = BigDecimal.ZERO;
-        if (monthIncome.compareTo(BigDecimal.ZERO) > 0) {
-            savingsRate = monthIncome
-                    .subtract(monthExpenses)
-                    .divide(monthIncome, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100));
-        }
+        BigDecimal savingsRate = income.compareTo(BigDecimal.ZERO) > 0
+                ? income.subtract(expenses)
+                .divide(income, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                : BigDecimal.ZERO;
 
         return new DashboardMonthlySummaryResponse(
-                targetMonth.toString(),
-                monthIncome,
-                monthExpenses,
-                monthInvestments,
+                month.toString(),
+                income,
+                expenses,
+                investments,
                 netWorth,
                 savingsRate
         );
     }
+
 
     private BigDecimal defaultZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
