@@ -20,105 +20,105 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final IncomeRepository incomeRepository;
-    private final OutgoingRepository costRepository;
-    private final InvestmentsRepository investmentsRepository;
-    private final UserRepository userRepository;
-    private final DashboardProjectionService dashboardProjectionService;
+        private final IncomeRepository incomeRepository;
+        private final OutgoingRepository outgoingRepository;
+        private final InvestmentsRepository investmentsRepository;
+        private final UserRepository userRepository;
 
-    public DashboardSummaryResponse getSummary(String email) {
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        BigDecimal totalIncome =
-                defaultZero(incomeRepository.sumByUserId(user.getId()));
-
-        BigDecimal totalCost =
-                defaultZero(costRepository.sumByUserId(user.getId()));
-
-        BigDecimal totalInvestments =
-                defaultZero(investmentsRepository.sumByUserId(user.getId()));
-
-        // 🔥 GANHO REAL DE INVESTIMENTOS (expectedReturn)
-        List<Investments> investments =
-                investmentsRepository.findAllByUserId(user.getId());
-
-        BigDecimal investmentGains = investments.stream()
-                .map(inv ->
-                        inv.getValue().multiply(
-                                BigDecimal.valueOf(inv.getExpectedReturn() / 100)
-                        )
-                )
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal netIncome = totalIncome.subtract(totalCost);
-
-        BigDecimal netWorth =
-                netIncome.add(totalInvestments).add(investmentGains);
-
-        BigDecimal savingsRate = BigDecimal.ZERO;
-        if (totalIncome.compareTo(BigDecimal.ZERO) > 0) {
-            savingsRate = netIncome
-                    .divide(totalIncome, 4, RoundingMode.HALF_UP)
-                    .multiply(new BigDecimal("100"));
+        private BigDecimal defaultZero(BigDecimal value) {
+                return value != null ? value : BigDecimal.ZERO;
         }
 
-        return new DashboardSummaryResponse(
-                investmentGains,
-                netWorth,
-                savingsRate
-        );
-    }
+        public DashboardSummaryResponse getSummary(String email) {
 
-    public MonthlySummaryResponse getMonthlySummary(Long userId, String monthStr) { // ex: "2026-02"
-        YearMonth selectedMonth = YearMonth.parse(monthStr); // 2026-02
-        int ym = selectedMonth.getYear() * 100 + selectedMonth.getMonthValue(); // 202602
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // 1. Income apenas do mês selecionado (projetado, incluindo recorrentes)
-        BigDecimal monthlyIncome = defaultZero(
-                incomeRepository.sumIncomeByExactMonth(userId, ym)
-        );
+                BigDecimal totalIncome = defaultZero(incomeRepository.sumByUserId(user.getId()));
 
-        // 2. Expenses apenas do mês selecionado
-        BigDecimal monthlyExpenses = defaultZero(
-                costRepository.sumExpensesByExactMonth(userId, ym)
-        );
+                BigDecimal totalCost = defaultZero(outgoingRepository.sumByUserId(user.getId()));
 
-        // 3. Net Worth acumulado ATÉ O MÊS ANTERIOR ao selecionado
-        //    Ou seja: todo superávit (income - expenses) de todos os meses anteriores
-        YearMonth previousMonth = selectedMonth.minusMonths(1);
-        int previousYm = previousMonth.getYear() * 100 + previousMonth.getMonthValue();
+                BigDecimal totalInvestments = defaultZero(investmentsRepository.sumByUserId(user.getId()));
 
-        BigDecimal netWorthUntilPreviousMonth = calculateCumulativeNetUntilMonth(userId, previousYm);
-        // Essa função você já tem partes dela: soma (incomes - expenses) até previousYm
+                // 🔥 GANHO REAL DE INVESTIMENTOS (expectedReturn)
+                List<Investments> investments = investmentsRepository.findAllByUserId(user.getId());
 
-        // 4. Cálculo final dos campos que vão para o frontend
-        BigDecimal displayedIncome = monthlyIncome.add(netWorthUntilPreviousMonth);
-        BigDecimal displayedNetWorth = displayedIncome.subtract(monthlyExpenses);
-        BigDecimal savingsRate = displayedIncome.compareTo(BigDecimal.ZERO) == 0
-                ? BigDecimal.ZERO
-                : displayedNetWorth.divide(displayedIncome, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+                BigDecimal investmentGains = investments.stream()
+                                .map(inv -> inv.getValue().multiply(
+                                                BigDecimal.valueOf(inv.getExpectedReturn() / 100)))
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return new MonthlySummaryResponse(
-                displayedIncome,          // ← Esse é o "Income" que aparece na tela
-                monthlyExpenses,          // ← Expenses normais do mês
-                displayedNetWorth,        // ← Net Worth até o final do mês selecionado
-                savingsRate
-                // outros campos...
-        );
-    }
+                BigDecimal netIncome = totalIncome.subtract(totalCost);
 
-    private BigDecimal calculateCumulativeNetUntilMonth(Long userId, int yearMonth) {
-        BigDecimal totalIncome = defaultZero(incomeRepository.sumIncomeUntilMonth(userId, yearMonth));
-        BigDecimal totalExpenses = defaultZero(costRepository.sumExpensesUntilMonth(userId, yearMonth));
-        return totalIncome.subtract(totalExpenses);
-    }
+                BigDecimal netWorth = netIncome.add(totalInvestments).add(investmentGains);
 
+                BigDecimal savingsRate = BigDecimal.ZERO;
+                if (totalIncome.compareTo(BigDecimal.ZERO) > 0) {
+                        savingsRate = netIncome
+                                        .divide(totalIncome, 4, RoundingMode.HALF_UP)
+                                        .multiply(new BigDecimal("100"));
+                }
 
+                return new DashboardSummaryResponse(
+                                investmentGains,
+                                netWorth,
+                                savingsRate);
+        }
 
+        public DashboardMonthlySummaryResponse getMonthlySummary(Long userId, String monthStr) {
+                YearMonth targetMonth = YearMonth.parse(monthStr);
+                int ym = targetMonth.getYear() * 100 + targetMonth.getMonthValue();
 
-    private BigDecimal defaultZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
-    }
+                YearMonth previousMonth = targetMonth.minusMonths(1);
+                int previousYm = previousMonth.getYear() * 100 + previousMonth.getMonthValue();
+
+                // Income total acumulado até o mês atual (inclusive)
+                BigDecimal totalIncomeUntilMonth = defaultZero(
+                                incomeRepository.sumIncomeUntilMonth(userId, ym));
+
+                // Income total acumulado até o mês anterior
+                BigDecimal totalIncomeUntilPreviousMonth = defaultZero(
+                                incomeRepository.sumIncomeUntilMonth(userId, previousYm));
+
+                // Income apenas do mês atual
+                BigDecimal incomeOfCurrentMonth = totalIncomeUntilMonth.subtract(totalIncomeUntilPreviousMonth);
+
+                // Despesas acumuladas até o mês anterior
+                BigDecimal totalExpensesUntilPreviousMonth = defaultZero(
+                                outgoingRepository.sumOutgoingsUntilMonth(userId, previousYm));
+
+                // Net worth (saldo) até o final do mês anterior
+                BigDecimal netWorthUntilPreviousMonth = totalIncomeUntilPreviousMonth
+                                .subtract(totalExpensesUntilPreviousMonth);
+
+                // Despesas apenas do mês atual
+                BigDecimal expensesOfMonth = defaultZero(
+                                outgoingRepository.sumOutgoingsByExactMonth(userId, ym));
+
+                // Investimentos apenas do mês atual
+                BigDecimal investmentsOfMonth = defaultZero(
+                                investmentsRepository.sumInvestmentsByExactMonth(userId, ym));
+
+                // Income exibido na tela = income do mês atual + saldo acumulado do mês
+                // anterior
+                BigDecimal displayedIncome = incomeOfCurrentMonth.add(netWorthUntilPreviousMonth);
+
+                // Net worth final do mês atual
+                BigDecimal netWorth = displayedIncome.subtract(expensesOfMonth);
+
+                // Savings rate (poupança em relação ao "income" exibido)
+                BigDecimal savingsRate = displayedIncome.compareTo(BigDecimal.ZERO) > 0
+                                ? netWorth.divide(displayedIncome, 4, RoundingMode.HALF_UP)
+                                                .multiply(BigDecimal.valueOf(100))
+                                : BigDecimal.ZERO;
+
+                return new DashboardMonthlySummaryResponse(
+                                targetMonth.toString(),
+                                displayedIncome,
+                                expensesOfMonth,
+                                investmentsOfMonth,
+                                netWorth,
+                                savingsRate);
+        }
+
 }

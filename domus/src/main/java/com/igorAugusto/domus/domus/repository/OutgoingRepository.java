@@ -19,13 +19,27 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
 
     List<Outgoing> findAllByUserId(Long userId);
 
+    // Soma acumulada de despesas até o mês informado (inclusive)
     @Query("""
-    SELECT COALESCE(SUM(e.value), 0)
-    FROM Expense e
-    WHERE e.user.id = :userId
-      AND (YEAR(e.date) * 100 + MONTH(e.date)) <= :yearMonth
-    """)
-    BigDecimal sumExpensesUntilMonth(@Param("userId") Long userId, @Param("yearMonth") int yearMonth);
+                SELECT COALESCE(SUM(o.value), 0)
+                FROM Outgoing o
+                WHERE o.user.id = :userId
+                  AND (YEAR(o.startDate) * 100 + MONTH(o.startDate)) <= :yearMonth
+            """)
+    BigDecimal sumOutgoingsUntilMonth(
+            @Param("userId") Long userId,
+            @Param("yearMonth") int yearMonth
+    );
 
-
+    // Soma APENAS as despesas do mês exato
+    @Query("""
+                SELECT COALESCE(SUM(o.value), 0)
+                FROM Outgoing o
+                WHERE o.user.id = :userId
+                  AND (YEAR(o.startDate) * 100 + MONTH(o.startDate)) = :yearMonth
+            """)
+    BigDecimal sumOutgoingsByExactMonth(
+            @Param("userId") Long userId,
+            @Param("yearMonth") int yearMonth
+    );
 }
