@@ -2,7 +2,6 @@ package com.igorAugusto.domus.domus.service;
 
 import com.igorAugusto.domus.domus.dto.DashboardMonthlySummaryResponse;
 import com.igorAugusto.domus.domus.dto.DashboardSummaryResponse;
-import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
@@ -72,42 +71,51 @@ public class DashboardService {
         );
     }
 
-    public DashboardMonthlySummaryResponse getMonthlySummary(
-            String email,
-            YearMonth month
-    ) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow();
+    public MonthlySummaryResponse getMonthlySummary(Long userId, String monthStr) { // ex: "2026-02"
+        YearMonth selectedMonth = YearMonth.parse(monthStr); // 2026-02
+        int ym = selectedMonth.getYear() * 100 + selectedMonth.getMonthValue(); // 202602
 
-        MonthlyProjectionResponse projection =
-                dashboardProjectionService
-                        .projectNext12Months(user.getId())
-                        .stream()
-                        .filter(p -> YearMonth.parse(p.getMonth()).equals(month))
-                        .findFirst()
-                        .orElseThrow();
+        // 1. Income apenas do mês selecionado (projetado, incluindo recorrentes)
+        BigDecimal monthlyIncome = defaultZero(
+                incomeRepository.sumIncomeByExactMonth(userId, ym)
+        );
 
-        BigDecimal income = projection.getIncome();
-        BigDecimal expenses = projection.getExpenses();
-        BigDecimal investments = projection.getInvestments();
+        // 2. Expenses apenas do mês selecionado
+        BigDecimal monthlyExpenses = defaultZero(
+                costRepository.sumExpensesByExactMonth(userId, ym)
+        );
 
-        BigDecimal netWorth = income.subtract(expenses).add(investments);
+        // 3. Net Worth acumulado ATÉ O MÊS ANTERIOR ao selecionado
+        //    Ou seja: todo superávit (income - expenses) de todos os meses anteriores
+        YearMonth previousMonth = selectedMonth.minusMonths(1);
+        int previousYm = previousMonth.getYear() * 100 + previousMonth.getMonthValue();
 
-        BigDecimal savingsRate = income.compareTo(BigDecimal.ZERO) > 0
-                ? income.subtract(expenses)
-                .divide(income, 4, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100))
-                : BigDecimal.ZERO;
+        BigDecimal netWorthUntilPreviousMonth = calculateCumulativeNetUntilMonth(userId, previousYm);
+        // Essa função você já tem partes dela: soma (incomes - expenses) até previousYm
 
-        return new DashboardMonthlySummaryResponse(
-                month.toString(),
-                income,
-                expenses,
-                investments,
-                netWorth,
+        // 4. Cálculo final dos campos que vão para o frontend
+        BigDecimal displayedIncome = monthlyIncome.add(netWorthUntilPreviousMonth);
+        BigDecimal displayedNetWorth = displayedIncome.subtract(monthlyExpenses);
+        BigDecimal savingsRate = displayedIncome.compareTo(BigDecimal.ZERO) == 0
+                ? BigDecimal.ZERO
+                : displayedNetWorth.divide(displayedIncome, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+
+        return new MonthlySummaryResponse(
+                displayedIncome,          // ← Esse é o "Income" que aparece na tela
+                monthlyExpenses,          // ← Expenses normais do mês
+                displayedNetWorth,        // ← Net Worth até o final do mês selecionado
                 savingsRate
+                // outros campos...
         );
     }
+
+    private BigDecimal calculateCumulativeNetUntilMonth(Long userId, int yearMonth) {
+        BigDecimal totalIncome = defaultZero(incomeRepository.sumIncomeUntilMonth(userId, yearMonth));
+        BigDecimal totalExpenses = defaultZero(costRepository.sumExpensesUntilMonth(userId, yearMonth));
+        return totalIncome.subtract(totalExpenses);
+    }
+
+
 
 
     private BigDecimal defaultZero(BigDecimal value) {
