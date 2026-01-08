@@ -1,7 +1,15 @@
-import com.igorAugusto.domus.domus.service.IncomeService;
+package com.igorAugusto.domus.domus.controller.importacao_teste;
+
+import com.igorAugusto.domus.domus.entity.User;
+import com.igorAugusto.domus.domus.repository.UserRepository;
 import com.igorAugusto.domus.domus.service.OutgoingService;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,19 +17,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
 @RestController
 @RequestMapping("/api/import")
 @RequiredArgsConstructor
 public class ImportController {
 
-    private final IncomeService incomeService;
     private final OutgoingService outgoingService;
+    private final UserRepository userRepository;
 
-    @PostMapping("/csv")
-    public ResponseEntity<Void> importCsv(
+    @PostMapping("/xlsx")
+    public ResponseEntity<Void> importXlsx(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("file") MultipartFile file
     ) throws Exception {
@@ -30,33 +35,25 @@ public class ImportController {
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow();
 
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream())
-        );
+        Workbook workbook = WorkbookFactory.create(file.getInputStream());
+        Sheet sheet = workbook.getSheetAt(0);
 
-        String line;
         boolean header = true;
 
-        while ((line = reader.readLine()) != null) {
-
+        for (Row row : sheet) {
             if (header) {
                 header = false;
                 continue;
             }
 
-            String[] cols = line.split(",");
-
-            String type = cols[0];
-
-            if ("INCOME".equals(type)) {
-                incomeService.createFromImport(user, cols);
-            }
+            String type = row.getCell(0).getStringCellValue();
 
             if ("EXPENSE".equals(type)) {
-                outgoingService.createFromImport(user, cols);
+                outgoingService.createFromImport(user, row);
             }
         }
 
+        workbook.close();
         return ResponseEntity.ok().build();
     }
 }
