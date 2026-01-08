@@ -132,6 +132,19 @@ public class IncomeService {
                 incomeRepository.delete(income);
         }
 
+        public void createFromImport(User user, String[] cols) {
+
+                Income income = new Income();
+                income.setUser(user);
+                income.setValue(new BigDecimal(cols[1]));
+                income.setStartDate(LocalDate.parse(cols[2]));
+                income.setRecurring(Boolean.parseBoolean(cols[3]));
+                income.setFrequency(cols[4]);
+
+                incomeRepository.save(income);
+        }
+
+
         // Converter Entity para DTO
         private IncomeResponse convertToResponse(Income income) {
                 return new IncomeResponse(
