@@ -2,6 +2,7 @@ package com.igorAugusto.domus.domus.service;
 
 import com.igorAugusto.domus.domus.dto.DashboardMonthlySummaryResponse;
 import com.igorAugusto.domus.domus.dto.DashboardSummaryResponse;
+import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -24,6 +26,7 @@ public class DashboardService {
         private final OutgoingRepository outgoingRepository;
         private final InvestmentsRepository investmentsRepository;
         private final UserRepository userRepository;
+        private final DashboardProjectionService dashboardProjectionService;
 
         private BigDecimal defaultZero(BigDecimal value) {
                 return value != null ? value : BigDecimal.ZERO;
@@ -65,60 +68,66 @@ public class DashboardService {
                                 savingsRate);
         }
 
-        public DashboardMonthlySummaryResponse getMonthlySummary(Long userId, String monthStr) {
+        public DashboardMonthlySummaryResponse getMonthlySummary(
+                Long userId,
+                String monthStr
+        ) {
                 YearMonth targetMonth = YearMonth.parse(monthStr);
-                int ym = targetMonth.getYear() * 100 + targetMonth.getMonthValue();
 
-                YearMonth previousMonth = targetMonth.minusMonths(1);
-                int previousYm = previousMonth.getYear() * 100 + previousMonth.getMonthValue();
+                List<MonthlyProjectionResponse> projection =
+                        dashboardProjectionService.projectNext12Months(userId);
 
-                // Income total acumulado até o mês atual (inclusive)
-                BigDecimal totalIncomeUntilMonth = defaultZero(
-                                incomeRepository.sumIncomeUntilMonth(userId, ym));
+                // 🔥 ordena por mês (garantia)
+                projection.sort(Comparator.comparing(MonthlyProjectionResponse::getMonth));
 
-                // Income total acumulado até o mês anterior
-                BigDecimal totalIncomeUntilPreviousMonth = defaultZero(
-                                incomeRepository.sumIncomeUntilMonth(userId, previousYm));
+                BigDecimal accumulatedBalance = BigDecimal.ZERO;
 
-                // Income apenas do mês atual
-                BigDecimal incomeOfCurrentMonth = totalIncomeUntilMonth.subtract(totalIncomeUntilPreviousMonth);
+                MonthlyProjectionResponse current = null;
 
-                // Despesas acumuladas até o mês anterior
-                BigDecimal totalExpensesUntilPreviousMonth = defaultZero(
-                                outgoingRepository.sumOutgoingsUntilMonth(userId, previousYm));
+                for (MonthlyProjectionResponse month : projection) {
 
-                // Net worth (saldo) até o final do mês anterior
-                BigDecimal netWorthUntilPreviousMonth = totalIncomeUntilPreviousMonth
-                                .subtract(totalExpensesUntilPreviousMonth);
+                        // saldo entra antes do income do mês
+                        BigDecimal displayedIncome =
+                                accumulatedBalance.add(month.getIncome());
 
-                // Despesas apenas do mês atual
-                BigDecimal expensesOfMonth = defaultZero(
-                                outgoingRepository.sumOutgoingsByExactMonth(userId, ym));
+                        BigDecimal netWorth =
+                                displayedIncome.subtract(month.getExpenses());
 
-                // Investimentos apenas do mês atual
-                BigDecimal investmentsOfMonth = defaultZero(
-                                investmentsRepository.sumInvestmentsByExactMonth(userId, ym));
+                        // atualiza saldo acumulado
+                        accumulatedBalance = netWorth;
 
-                // Income exibido na tela = income do mês atual + saldo acumulado do mês
-                // anterior
-                BigDecimal displayedIncome = incomeOfCurrentMonth.add(netWorthUntilPreviousMonth);
+                        if (month.getMonth().equals(targetMonth.toString())) {
+                                current = new MonthlyProjectionResponse(
+                                        month.getMonth(),
+                                        displayedIncome,
+                                        month.getExpenses(),
+                                        month.getInvestments()
+                                );
+                                break;
+                        }
+                }
 
-                // Net worth final do mês atual
-                BigDecimal netWorth = displayedIncome.subtract(expensesOfMonth);
+                if (current == null) {
+                        throw new RuntimeException("Mês não encontrado na projeção");
+                }
 
-                // Savings rate (poupança em relação ao "income" exibido)
-                BigDecimal savingsRate = displayedIncome.compareTo(BigDecimal.ZERO) > 0
-                                ? netWorth.divide(displayedIncome, 4, RoundingMode.HALF_UP)
-                                                .multiply(BigDecimal.valueOf(100))
+                BigDecimal savingsRate =
+                        current.getIncome().compareTo(BigDecimal.ZERO) > 0
+                                ? accumulatedBalance
+                                .divide(current.getIncome(), 4, RoundingMode.HALF_UP)
+                                .multiply(BigDecimal.valueOf(100))
                                 : BigDecimal.ZERO;
 
                 return new DashboardMonthlySummaryResponse(
-                                targetMonth.toString(),
-                                displayedIncome,
-                                expensesOfMonth,
-                                investmentsOfMonth,
-                                netWorth,
-                                savingsRate);
+                        current.getMonth(),
+                        current.getIncome(),
+                        current.getExpenses(),
+                        current.getInvestments(),
+                        accumulatedBalance,
+                        savingsRate
+                );
         }
+
+
 
 }

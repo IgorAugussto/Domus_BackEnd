@@ -30,16 +30,4 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
             @Param("userId") Long userId,
             @Param("yearMonth") int yearMonth
     );
-
-    // Soma APENAS as despesas do mês exato
-    @Query("""
-                SELECT COALESCE(SUM(o.value), 0)
-                FROM Outgoing o
-                WHERE o.user.id = :userId
-                  AND (YEAR(o.startDate) * 100 + MONTH(o.startDate)) = :yearMonth
-            """)
-    BigDecimal sumOutgoingsByExactMonth(
-            @Param("userId") Long userId,
-            @Param("yearMonth") int yearMonth
-    );
 }
