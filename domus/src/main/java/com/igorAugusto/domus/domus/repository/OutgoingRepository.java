@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -20,17 +19,15 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
 
     List<Outgoing> findAllByUserId(Long userId);
 
+    // Soma acumulada de despesas até o mês informado (inclusive)
     @Query("""
-        SELECT COALESCE(SUM(o.value), 0)
-        FROM Outgoing o
-        WHERE o.user.id = :userId
-          AND o.startDate BETWEEN :startDate AND :endDate
-    """)
-    BigDecimal sumByUserIdAndStartDateBetween(
+                SELECT COALESCE(SUM(o.value), 0)
+                FROM Outgoing o
+                WHERE o.user.id = :userId
+                  AND (YEAR(o.startDate) * 100 + MONTH(o.startDate)) <= :yearMonth
+            """)
+    BigDecimal sumOutgoingsUntilMonth(
             @Param("userId") Long userId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+            @Param("yearMonth") int yearMonth
     );
-
-
 }

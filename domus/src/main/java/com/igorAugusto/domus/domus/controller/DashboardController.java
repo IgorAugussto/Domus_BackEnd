@@ -59,7 +59,13 @@ public class DashboardController {
     public ResponseEntity<DashboardMonthlySummaryResponse> getMonthlySummary(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String month) {
-        YearMonth resolvedMonth;
+
+        YearMonth resolvedMonth = YearMonth.now();
+
+        // Pega o usuário logado e seu ID
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        Long userId = user.getId();
 
         try {
             resolvedMonth = (month != null && !month.isBlank())
@@ -69,10 +75,12 @@ public class DashboardController {
             resolvedMonth = YearMonth.now();
         }
 
-        return ResponseEntity.ok(
-                dashboardService.getMonthlySummary(
-                        userDetails.getUsername(),
-                        resolvedMonth));
+        // Converte para String
+        String monthStr = resolvedMonth.toString(); // ex: "2026-02"
+
+        DashboardMonthlySummaryResponse response = dashboardService.getMonthlySummary(userId, monthStr);
+
+        return ResponseEntity.ok(response);
     }
 
 }

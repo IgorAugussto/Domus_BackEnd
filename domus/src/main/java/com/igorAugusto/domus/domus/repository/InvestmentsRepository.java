@@ -13,30 +13,36 @@ import java.util.List;
 @Repository
 public interface InvestmentsRepository extends JpaRepository<Investments, Long> {
 
-    // Busca todas as receitas de um usuário
     List<Investments> findByUserId(Long userId);
 
-    // Busca receitas de um usuário em um período
     List<Investments> findByUserIdAndCreatedAtBetween(Long userId, LocalDate start, LocalDate end);
 
-    // Soma total de receitas de um usuário
     @Query("SELECT SUM(i.value) FROM Investments i WHERE i.user.id = :userId")
     BigDecimal sumByUserId(@Param("userId") Long userId);
 
     List<Investments> findAllByUserId(Long userId);
 
+    // Soma investimentos APENAS do mês exato (usado no monthly summary)
     @Query("""
-        SELECT COALESCE(SUM(i.value), 0)
-        FROM Investments i
-        WHERE i.user.id = :userId
-          AND i.startDate BETWEEN :startDate AND :endDate
-    """)
-    BigDecimal sumByUserIdAndStartDateBetween(
+                SELECT COALESCE(SUM(i.value), 0)
+                FROM Investments i
+                WHERE i.user.id = :userId
+                  AND (YEAR(i.createdAt) * 100 + MONTH(i.createdAt)) = :yearMonth
+            """)
+    BigDecimal sumInvestmentsByExactMonth(
             @Param("userId") Long userId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+            @Param("yearMonth") int yearMonth
     );
 
-
-
+    // Opcional: soma acumulada de todos os aportes até o mês
+    @Query("""
+                SELECT COALESCE(SUM(i.value), 0)
+                FROM Investments i
+                WHERE i.user.id = :userId
+                  AND (YEAR(i.createdAt) * 100 + MONTH(i.createdAt)) <= :yearMonth
+            """)
+    BigDecimal sumInvestmentsUntilMonth(
+            @Param("userId") Long userId,
+            @Param("yearMonth") int yearMonth
+    );
 }
