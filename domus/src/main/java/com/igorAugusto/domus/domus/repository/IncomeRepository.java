@@ -13,15 +13,10 @@ import java.util.List;
 @Repository
 public interface IncomeRepository extends JpaRepository<Income, Long> {
 
-    // Busca todas as receitas de um usuário
     List<Income> findByUserId(Long userId);
 
-    // Busca receitas de um usuário em um período
     List<Income> findByUserIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            Long userId,
-            LocalDate end,
-            LocalDate start
-    );
+            Long userId, LocalDate end, LocalDate start);
 
     @Query("""
                 SELECT COALESCE(SUM(i.value), 0)
@@ -30,29 +25,34 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
                   AND i.startDate <= :date
                   AND (i.endDate IS NULL OR i.endDate >= :date)
             """)
-    BigDecimal sumMonthlyIncome(
-            @Param("userId") Long userId,
-            @Param("date") LocalDate date
-    );
+    BigDecimal sumMonthlyIncome(@Param("userId") Long userId, @Param("date") LocalDate date);
 
-
-    // Soma total de receitas de um usuário
     @Query("SELECT SUM(i.value) FROM Income i WHERE i.user.id = :userId")
     BigDecimal sumByUserId(@Param("userId") Long userId);
 
     List<Income> findAllByUserId(Long userId);
 
+    // ESSA É A QUERY PRINCIPAL QUE VOCÊ JÁ USA NO SERVICE
     @Query("""
-        SELECT COALESCE(SUM(i.value), 0)
-        FROM Income i
-        WHERE i.user.id = :userId
-          AND i.startDate BETWEEN :startDate AND :endDate
-    """)
-    BigDecimal sumByUserIdAndStartDateBetween(
+                SELECT COALESCE(SUM(i.value), 0)
+                FROM Income i
+                WHERE i.user.id = :userId
+                  AND (YEAR(i.startDate) * 100 + MONTH(i.startDate)) <= :yearMonth
+            """)
+    BigDecimal sumIncomeUntilMonth(
             @Param("userId") Long userId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+            @Param("yearMonth") int yearMonth
     );
 
-
+    // OPCIONAL: soma apenas do mês exato (útil para projeções ou depuração)
+    @Query("""
+                SELECT COALESCE(SUM(i.value), 0)
+                FROM Income i
+                WHERE i.user.id = :userId
+                  AND (YEAR(i.startDate) * 100 + MONTH(i.startDate)) = :yearMonth
+            """)
+    BigDecimal sumIncomeByExactMonth(
+            @Param("userId") Long userId,
+            @Param("yearMonth") int yearMonth
+    );
 }
