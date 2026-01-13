@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${RDS_ENDPOINT}:5432/domus_db
+    username: ${RDS_USERNAME}
+    password: ${RDS_PASSWORD}
