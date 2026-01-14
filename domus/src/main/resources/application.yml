@@ -12,7 +12,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:3600000}   # fallback de 1 hora se não tiver variável
+  expiration: ${JWT_EXPIRATION:3600000}   # fallback de 1 hora se nï¿½o tiver variï¿½vel
 
 logging:
   level:
