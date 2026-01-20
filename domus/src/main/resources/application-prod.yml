@@ -1,5 +1,5 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${RDS_ENDPOINT}:5432/domus_db
-    username: ${RDS_USERNAME}
-    password: ${RDS_PASSWORD}
+    url: jdbc:postgresql://domus-db.cdouw6ikwdtd.us-east-2.rds.amazonaws.com:5432/domus_db
+    username: domus_admin
+    password: Stepflish159**
