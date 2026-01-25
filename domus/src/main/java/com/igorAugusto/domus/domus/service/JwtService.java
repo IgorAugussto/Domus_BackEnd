@@ -18,7 +18,7 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // Chave secreta (guarde em application.properties!)
+    // Chave secreta (guarde em application.yml!)
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
