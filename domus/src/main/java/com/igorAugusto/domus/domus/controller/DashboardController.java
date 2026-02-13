@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Year;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -33,14 +34,28 @@ public class DashboardController {
         return dashboardService.getSummary(userDetails.getUsername());
     }
 
-    // 🔥 NOVO ENDPOINT — PROJEÇÃO DO GRÁFICO (12 MESES)
+    /**
+     * ============================
+     * 🔥 ENDPOINT ATUALIZADO - ANO FIXO
+     * ============================
+     * GET /api/dashboard/projection/year
+     * GET /api/dashboard/projection/year?year=2026
+     *
+     * Retorna os 12 meses de um ano específico (Janeiro–Dezembro).
+     * Se não informar o ano, retorna o ano atual.
+     */
     @GetMapping("/projection/year")
     public List<MonthlyProjectionResponse> getYearProjection(
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) Integer year) {
+
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        return dashboardProjectionService.projectNext12Months(user.getId());
+        // Se não passar ano, usa o ano atual
+        Integer targetYear = (year != null) ? year : Year.now().getValue();
+
+        return dashboardProjectionService.projectFixedYear(user.getId(), targetYear);
     }
 
     // ============================
@@ -62,7 +77,6 @@ public class DashboardController {
 
         YearMonth resolvedMonth = YearMonth.now();
 
-        // Pega o usuário logado e seu ID
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
         Long userId = user.getId();
@@ -75,12 +89,10 @@ public class DashboardController {
             resolvedMonth = YearMonth.now();
         }
 
-        // Converte para String
-        String monthStr = resolvedMonth.toString(); // ex: "2026-02"
+        String monthStr = resolvedMonth.toString();
 
         DashboardMonthlySummaryResponse response = dashboardService.getMonthlySummary(userId, monthStr);
 
         return ResponseEntity.ok(response);
     }
-
 }

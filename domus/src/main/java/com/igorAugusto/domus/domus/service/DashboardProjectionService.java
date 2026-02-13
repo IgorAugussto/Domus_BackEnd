@@ -13,9 +13,11 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -25,8 +27,115 @@ public class DashboardProjectionService {
     private final OutgoingRepository outgoingRepository;
     private final InvestmentsRepository investmentsRepository;
 
-    public List<MonthlyProjectionResponse> projectNext12Months(Long userId) {
+    /**
+     * ============================
+     * 🔥 NOVO MÉTODO - ANO CALENDÁRIO FIXO
+     * ============================
+     * Retorna SEMPRE os 12 meses de um ano específico (Jan–Dez).
+     * Não usa rolling year (YearMonth.now().plusMonths()).
+     *
+     * @param userId ID do usuário
+     * @param year Ano desejado (ex: 2026). Se null, usa o ano atual.
+     * @return Lista com 12 meses (Janeiro a Dezembro)
+     */
+    public List<MonthlyProjectionResponse> projectFixedYear(Long userId, Integer year) {
 
+        // Se não informar ano, usa o ano atual
+        int targetYear = (year != null) ? year : Year.now().getValue();
+
+        // Cria um mapa com os 12 meses do ano (Janeiro = 1, Dezembro = 12)
+        Map<YearMonth, MonthlyProjectionResponse> projection = new LinkedHashMap<>();
+
+        IntStream.rangeClosed(1, 12).forEach(month -> {
+            YearMonth ym = YearMonth.of(targetYear, month);
+            projection.put(
+                    ym,
+                    new MonthlyProjectionResponse(
+                            ym.toString(), // "2026-01", "2026-02", etc.
+                            BigDecimal.ZERO,
+                            BigDecimal.ZERO,
+                            BigDecimal.ZERO
+                    )
+            );
+        });
+
+        // 2️⃣ INCOMES
+        List<Income> incomes = incomeRepository.findAllByUserId(userId);
+
+        for (Income income : incomes) {
+            YearMonth incomeStart = YearMonth.from(income.getStartDate());
+            boolean recurring = Boolean.TRUE.equals(income.getRecurring());
+
+            for (YearMonth ym : projection.keySet()) {
+
+                // Verifica se o mês está dentro do período do income
+                boolean isAfterStart = !ym.isBefore(incomeStart);
+                boolean isBeforeEnd = income.getEndDate() == null ||
+                        !ym.isAfter(YearMonth.from(income.getEndDate()));
+
+                if (isAfterStart && isBeforeEnd) {
+                    MonthlyProjectionResponse item = projection.get(ym);
+                    item.setIncome(item.getIncome().add(income.getValue()));
+                }
+            }
+        }
+
+        // 3️⃣ OUTGOINGS (EXPENSES)
+        List<Outgoing> outgoings = outgoingRepository.findAllByUserId(userId);
+
+        for (Outgoing outgoing : outgoings) {
+            YearMonth start = YearMonth.from(outgoing.getStartDate());
+            YearMonth end = start.plusMonths(outgoing.getDurationInMonths() - 1);
+
+            for (YearMonth ym : projection.keySet()) {
+                if (!ym.isBefore(start) && !ym.isAfter(end)) {
+                    MonthlyProjectionResponse item = projection.get(ym);
+                    item.setExpenses(item.getExpenses().add(outgoing.getValue()));
+                }
+            }
+        }
+
+        // 4️⃣ INVESTMENTS
+        List<Investments> investments = investmentsRepository.findAllByUserId(userId);
+
+        for (Investments inv : investments) {
+            BigDecimal initialValue = inv.getValue();
+
+            BigDecimal monthlyRate = BigDecimal
+                    .valueOf(inv.getExpectedReturn())
+                    .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
+                    .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
+
+            YearMonth investStart = YearMonth.from(inv.getStartDate());
+            YearMonth investEnd = YearMonth.from(inv.getEndDate());
+
+            for (YearMonth ym : projection.keySet()) {
+                if (ym.isBefore(investStart) || ym.isAfter(investEnd)) {
+                    continue;
+                }
+
+                long monthsPassed = ChronoUnit.MONTHS.between(investStart, ym);
+
+                BigDecimal growthFactor = BigDecimal.ONE
+                        .add(monthlyRate)
+                        .pow((int) monthsPassed, MathContext.DECIMAL64);
+
+                BigDecimal currentValue = initialValue.multiply(growthFactor, MathContext.DECIMAL64);
+
+                MonthlyProjectionResponse item = projection.get(ym);
+                item.setInvestments(item.getInvestments().add(currentValue));
+            }
+        }
+
+        return new ArrayList<>(projection.values());
+    }
+
+    // ============================
+    // MANTÉM O MÉTODO ANTIGO (OPCIONAL - PARA COMPATIBILIDADE)
+    // ============================
+    public List<MonthlyProjectionResponse> projectNext12Months(Long userId) {
+        // Seu código antigo permanece igual
+        // ... (código atual)
         Map<YearMonth, MonthlyProjectionResponse> projection = new LinkedHashMap<>();
 
         YearMonth startMonth = YearMonth.now();
@@ -134,7 +243,7 @@ public class DashboardProjectionService {
      * ============================
      */
     public List<MonthlyProjectionResponse> projectCurrentMonthDays(Long userId) {
-
+        // Seu código permanece igual
         Map<LocalDate, MonthlyProjectionResponse> projection = new LinkedHashMap<>();
 
         YearMonth currentMonth = YearMonth.now();
@@ -154,37 +263,37 @@ public class DashboardProjectionService {
         // 2️⃣ Aplica INCOMES
         List<Income> incomes = incomeRepository.findAllByUserId(userId);
 
-    for (Income income : incomes) {
+        for (Income income : incomes) {
 
-        for (LocalDate date : projection.keySet()) {
+            for (LocalDate date : projection.keySet()) {
 
-            boolean isActive =
-                !date.isBefore(income.getStartDate()) &&
-                (income.getEndDate() == null || !date.isAfter(income.getEndDate()));
+                boolean isActive =
+                        !date.isBefore(income.getStartDate()) &&
+                                (income.getEndDate() == null || !date.isAfter(income.getEndDate()));
 
-            if (!isActive) continue;
+                if (!isActive) continue;
 
-            MonthlyProjectionResponse item = projection.get(date);
+                MonthlyProjectionResponse item = projection.get(date);
 
-            // ✅ CASO 1: INCOME RECORRENTE MENSAL
-            if (Boolean.TRUE.equals(income.getRecurring())
-                && "Monthly".equalsIgnoreCase(income.getFrequency())) {
+                // ✅ CASO 1: INCOME RECORRENTE MENSAL
+                if (Boolean.TRUE.equals(income.getRecurring())
+                        && "Monthly".equalsIgnoreCase(income.getFrequency())) {
 
-                item.setIncome(
-                    item.getIncome().add(income.getValue())
-                );
-            }
+                    item.setIncome(
+                            item.getIncome().add(income.getValue())
+                    );
+                }
 
-            // ✅ CASO 2: INCOME NÃO RECORRENTE (ONE-TIME, BONUS, GIFT, ETC)
-            if (!Boolean.TRUE.equals(income.getRecurring())
-                && date.equals(income.getStartDate())) {
+                // ✅ CASO 2: INCOME NÃO RECORRENTE (ONE-TIME, BONUS, GIFT, ETC)
+                if (!Boolean.TRUE.equals(income.getRecurring())
+                        && date.equals(income.getStartDate())) {
 
-                item.setIncome(
-                    item.getIncome().add(income.getValue())
-                );
+                    item.setIncome(
+                            item.getIncome().add(income.getValue())
+                    );
+                }
             }
         }
-    }
 
 
         // 3️⃣ Aplica OUTGOINGS (mesma lógica)
@@ -239,5 +348,4 @@ public class DashboardProjectionService {
 
         return new ArrayList<>(projection.values());
     }
-
 }
