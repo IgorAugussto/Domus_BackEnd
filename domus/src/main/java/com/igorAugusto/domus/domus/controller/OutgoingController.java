@@ -1,7 +1,5 @@
 package com.igorAugusto.domus.domus.controller;
 
-import com.igorAugusto.domus.domus.dto.IncomeRequest;
-import com.igorAugusto.domus.domus.dto.IncomeResponse;
 import com.igorAugusto.domus.domus.dto.OutgoingRequest;
 import com.igorAugusto.domus.domus.dto.OutgoingResponse;
 import com.igorAugusto.domus.domus.service.OutgoingService;
