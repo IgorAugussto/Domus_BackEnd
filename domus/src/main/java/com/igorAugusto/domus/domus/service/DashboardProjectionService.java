@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
-import java.time.Year;
 import java.time.YearMonth;
+import java.time.Year;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -27,35 +27,38 @@ public class DashboardProjectionService {
     private final OutgoingRepository outgoingRepository;
     private final InvestmentsRepository investmentsRepository;
 
+    // ============================
+    // MANTÉM O MÉTODO ANTIGO (OPCIONAL - PARA COMPATIBILIDADE)
+    // ============================
     /**
      * ============================
      * 🔥 NOVO MÉTODO - ANO CALENDÁRIO FIXO
      * ============================
      * Retorna SEMPRE os 12 meses de um ano específico (Jan–Dez).
      * Não usa rolling year (YearMonth.now().plusMonths()).
-     *
+     * 
      * @param userId ID do usuário
      * @param year Ano desejado (ex: 2026). Se null, usa o ano atual.
      * @return Lista com 12 meses (Janeiro a Dezembro)
      */
     public List<MonthlyProjectionResponse> projectFixedYear(Long userId, Integer year) {
-
+        
         // Se não informar ano, usa o ano atual
         int targetYear = (year != null) ? year : Year.now().getValue();
-
+        
         // Cria um mapa com os 12 meses do ano (Janeiro = 1, Dezembro = 12)
         Map<YearMonth, MonthlyProjectionResponse> projection = new LinkedHashMap<>();
-
+        
         IntStream.rangeClosed(1, 12).forEach(month -> {
             YearMonth ym = YearMonth.of(targetYear, month);
             projection.put(
-                    ym,
-                    new MonthlyProjectionResponse(
-                            ym.toString(), // "2026-01", "2026-02", etc.
-                            BigDecimal.ZERO,
-                            BigDecimal.ZERO,
-                            BigDecimal.ZERO
-                    )
+                ym,
+                new MonthlyProjectionResponse(
+                    ym.toString(), // "2026-01", "2026-02", etc.
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO
+                )
             );
         });
 
@@ -67,12 +70,12 @@ public class DashboardProjectionService {
             boolean recurring = Boolean.TRUE.equals(income.getRecurring());
 
             for (YearMonth ym : projection.keySet()) {
-
+                
                 // Verifica se o mês está dentro do período do income
                 boolean isAfterStart = !ym.isBefore(incomeStart);
-                boolean isBeforeEnd = income.getEndDate() == null ||
-                        !ym.isAfter(YearMonth.from(income.getEndDate()));
-
+                boolean isBeforeEnd = income.getEndDate() == null || 
+                                      !ym.isAfter(YearMonth.from(income.getEndDate()));
+                
                 if (isAfterStart && isBeforeEnd) {
                     MonthlyProjectionResponse item = projection.get(ym);
                     item.setIncome(item.getIncome().add(income.getValue()));
@@ -102,9 +105,9 @@ public class DashboardProjectionService {
             BigDecimal initialValue = inv.getValue();
 
             BigDecimal monthlyRate = BigDecimal
-                    .valueOf(inv.getExpectedReturn())
-                    .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
-                    .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
+                .valueOf(inv.getExpectedReturn())
+                .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
+                .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
 
             YearMonth investStart = YearMonth.from(inv.getStartDate());
             YearMonth investEnd = YearMonth.from(inv.getEndDate());
@@ -117,8 +120,8 @@ public class DashboardProjectionService {
                 long monthsPassed = ChronoUnit.MONTHS.between(investStart, ym);
 
                 BigDecimal growthFactor = BigDecimal.ONE
-                        .add(monthlyRate)
-                        .pow((int) monthsPassed, MathContext.DECIMAL64);
+                    .add(monthlyRate)
+                    .pow((int) monthsPassed, MathContext.DECIMAL64);
 
                 BigDecimal currentValue = initialValue.multiply(growthFactor, MathContext.DECIMAL64);
 
