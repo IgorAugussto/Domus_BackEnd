@@ -1,0 +1,34 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Build with Maven
+      run: mvn clean package -DskipTests  # Sem cd, pois a raiz é o backend!
+
+    - name: Build Docker Image
+      run: docker build -t seuusername/domus-backend:latest .  # O . é a raiz do repo
+
+    - name: Login no Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push Docker Image
+      run: docker push seuusername/domus-backend:latest
