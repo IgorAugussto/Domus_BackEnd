@@ -12,7 +12,7 @@ FROM eclipse-temurin:${JAVA_VERSION}
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=$PORT -jar app.jar"]
 
 # Opcional: Healthcheck para AWS/EC2 (verifica se app está vivo)
 HEALTHCHECK --interval=30s --timeout=3s \
