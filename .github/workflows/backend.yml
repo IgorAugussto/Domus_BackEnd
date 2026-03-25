@@ -24,7 +24,9 @@ jobs:
         mvn clean package -DskipTests
 
     - name: Build Docker Image
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest .
+      run: |
+        cd domus
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest .
 
     - name: Login no Docker Hub
       uses: docker/login-action@v2
