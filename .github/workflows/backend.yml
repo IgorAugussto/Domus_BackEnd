@@ -47,4 +47,4 @@ jobs:
           docker stop domus-backend || true
           docker rm domus-backend || true
           docker pull ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
-          docker run -d -p 8080:8080 --name domus-backend ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
+          docker run -d -p 8080:8080 \ -e SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} \ --name domus-backend \ ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
