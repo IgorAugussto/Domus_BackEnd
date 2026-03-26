@@ -19,11 +19,11 @@ import java.util.function.Function;
 public class JwtService {
 
     // Chave secreta (guarde em application.yml!)
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String SECRET_KEY;
 
     // Tempo de expiração (24 horas em milissegundos)
-    @Value("${jwt.expiration}")
+    @Value("${JWT_EXPIRATION:86400000}")
     private long jwtExpiration;
 
     // 1️⃣ GERAR TOKEN
