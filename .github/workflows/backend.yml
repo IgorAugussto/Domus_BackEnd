@@ -50,6 +50,7 @@ jobs:
           docker run -d \
             --restart always \
             -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=prod \
             -e SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} \
             -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
             --name domus-backend \
