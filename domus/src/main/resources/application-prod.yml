@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://domus-db.cdouw6ikwdtd.us-east-2.rds.amazonaws.com:5432/domus_db
-    username: domus_admin
-    password:
+    url: jdbc:postgresql://db.svxdmuthiycwgqgxpwyn.supabase.co:5432/postgres?sslmode=require
+    username: postgres
+    password: ${SUPABASE_DB_PASSWORD}
 
 app:
   demo-mode: true

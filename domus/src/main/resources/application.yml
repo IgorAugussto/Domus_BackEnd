@@ -20,4 +20,4 @@ logging:
     org.hibernate.type: TRACE
 
 app:
-  demo-mode: false
+  demo-mode: true
