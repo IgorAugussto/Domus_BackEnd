@@ -2,7 +2,7 @@
 ARG JAVA_VERSION=17
 ARG MAVEN_VERSION=3.9.6
 
-FROM maven:$${MAVEN_VERSION}-eclipse-temurin-$${JAVA_VERSION} AS build
+FROM maven:${MAVEN_VERSION}-eclipse-temurin-${JAVA_VERSION} AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
