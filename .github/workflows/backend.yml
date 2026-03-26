@@ -51,5 +51,6 @@ jobs:
             --restart always \
             -p 8080:8080 \
             -e SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} \
+            -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
             --name domus-backend \
             ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
