@@ -83,7 +83,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:5173",
                 "http://domus-frontend-igoraugusto.s3-website.us-east-2.amazonaws.com",
-                "https://*.vercel.app"
+                "https://*.vercel.app",
+                "https://domus-front-end.vercel.app" 
         ));           // permite qualquer origem (ou coloque "http://localhost:5173")
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
