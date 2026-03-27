@@ -44,14 +44,26 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          echo "Parando container antigo..."
           docker stop domus-backend || true
           docker rm domus-backend || true
+
+          echo "Removendo imagem antiga..."
+          docker rmi ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest || true
+
+          echo "Baixando nova imagem..."
           docker pull ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
+
+          echo "Subindo novo container..."
           docker run -d \
             --restart always \
             -p 8080:8080 \
             -e SPRING_PROFILES_ACTIVE=prod \
             -e SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} \
             -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            -e JWT_EXPIRATION=3600000 \
             --name domus-backend \
             ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
+
+          echo "Containers ativos:"
+          docker ps
