@@ -13,6 +13,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OutgoingRequest {
+
     @NotNull(message = "Valor é obrigatório")
     private BigDecimal value;
 
@@ -27,4 +28,8 @@ public class OutgoingRequest {
     private String frequency;
 
     private String category;
+
+    private String paymentType; // ✅ adicionado — ex: "Cartão de Crédito" ou "Boleto"
+
+    private Boolean paid;       // ✅ adicionado — true = pago, false = pendente
 }

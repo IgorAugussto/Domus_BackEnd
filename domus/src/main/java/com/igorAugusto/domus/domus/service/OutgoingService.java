@@ -1,10 +1,7 @@
 package com.igorAugusto.domus.domus.service;
 
-import com.igorAugusto.domus.domus.dto.IncomeRequest;
-import com.igorAugusto.domus.domus.dto.IncomeResponse;
 import com.igorAugusto.domus.domus.dto.OutgoingRequest;
 import com.igorAugusto.domus.domus.dto.OutgoingResponse;
-import com.igorAugusto.domus.domus.entity.Income;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
@@ -30,7 +27,6 @@ public class OutgoingService {
 
         // Criar despesa
         public OutgoingResponse createOutgoing(OutgoingRequest request, String userEmail) {
-                // 1. Busca o usuário logado
                 User user = userRepository.findByEmail(userEmail)
                                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
@@ -45,7 +41,6 @@ public class OutgoingService {
                         duration = request.getDurationInMonths();
                 }
 
-                // 2. Cria a despesa
                 Outgoing outgoing = Outgoing.builder()
                                 .value(request.getValue())
                                 .description(request.getDescription())
@@ -53,13 +48,13 @@ public class OutgoingService {
                                 .durationInMonths(duration)
                                 .category(request.getCategory())
                                 .frequency(request.getFrequency())
+                                .paymentType(request.getPaymentType())                          // ✅ adicionado
+                                .paid(request.getPaid() != null ? request.getPaid() : false)    // ✅ adicionado
                                 .user(user)
                                 .build();
 
-                // 3. Salva no banco
                 outgoing = outgoingRepository.save(outgoing);
 
-                // 4. Retorna DTO de resposta
                 return convertToResponse(outgoing);
         }
 
@@ -83,10 +78,8 @@ public class OutgoingService {
                 return total != null ? total : BigDecimal.ZERO;
         }
 
-        public OutgoingResponse updateOutgoing(
-                        Long outgoingId,
-                        OutgoingRequest request,
-                        String userEmail) {
+        // Atualizar despesa
+        public OutgoingResponse updateOutgoing(Long outgoingId, OutgoingRequest request, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
                                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
@@ -103,12 +96,15 @@ public class OutgoingService {
                 outgoing.setDurationInMonths(request.getDurationInMonths());
                 outgoing.setFrequency(request.getFrequency());
                 outgoing.setCategory(request.getCategory());
+                outgoing.setPaymentType(request.getPaymentType());                          // ✅ adicionado
+                outgoing.setPaid(request.getPaid() != null ? request.getPaid() : false);    // ✅ adicionado
 
                 Outgoing updated = outgoingRepository.save(outgoing);
 
                 return convertToResponse(updated);
         }
 
+        // Deletar despesa
         public void deleteOutgoing(Long outgoinId, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
                                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
@@ -124,7 +120,6 @@ public class OutgoingService {
         }
 
         public void createFromImport(User user, Row row) {
-
                 Outgoing outgoing = new Outgoing();
                 outgoing.setUser(user);
                 outgoing.setDescription(getString(row.getCell(1)));
@@ -132,13 +127,13 @@ public class OutgoingService {
                 outgoing.setStartDate(LocalDate.parse(getString(row.getCell(3))));
                 outgoing.setFrequency(getString(row.getCell(5)));
                 outgoing.setDurationInMonths(getInt(row.getCell(6)));
+                // paymentType e paid não são importados via planilha — ficam null/false por padrão
 
                 outgoingRepository.save(outgoing);
         }
 
         private String getString(Cell cell) {
-                if (cell == null)
-                        return null;
+                if (cell == null) return null;
                 if (cell.getCellType() == CellType.STRING) {
                         return cell.getStringCellValue().trim();
                 }
@@ -149,8 +144,7 @@ public class OutgoingService {
         }
 
         private boolean getBoolean(Cell cell) {
-                if (cell == null)
-                        return false;
+                if (cell == null) return false;
                 if (cell.getCellType() == CellType.BOOLEAN) {
                         return cell.getBooleanCellValue();
                 }
@@ -161,8 +155,7 @@ public class OutgoingService {
         }
 
         private int getInt(Cell cell) {
-                if (cell == null)
-                        return 1;
+                if (cell == null) return 1;
                 if (cell.getCellType() == CellType.NUMERIC) {
                         return (int) cell.getNumericCellValue();
                 }
@@ -176,8 +169,7 @@ public class OutgoingService {
         }
 
         private BigDecimal getBigDecimal(Cell cell) {
-                if (cell == null)
-                        return BigDecimal.ZERO;
+                if (cell == null) return BigDecimal.ZERO;
                 if (cell.getCellType() == CellType.NUMERIC) {
                         return BigDecimal.valueOf(cell.getNumericCellValue());
                 }
@@ -190,7 +182,7 @@ public class OutgoingService {
                 return BigDecimal.ZERO;
         }
 
-        // Converter Entity para DTO
+        // Converter Entity → DTO de resposta
         private OutgoingResponse convertToResponse(Outgoing outgoing) {
                 return new OutgoingResponse(
                                 outgoing.getId(),
@@ -200,6 +192,9 @@ public class OutgoingService {
                                 outgoing.getDurationInMonths(),
                                 outgoing.getCategory(),
                                 outgoing.getCreatedAt(),
-                                outgoing.getFrequency());
+                                outgoing.getFrequency(),
+                                outgoing.getPaymentType(),  // ✅ adicionado
+                                outgoing.getPaid()          // ✅ adicionado
+                );
         }
 }

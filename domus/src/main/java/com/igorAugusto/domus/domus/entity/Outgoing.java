@@ -40,6 +40,13 @@ public class Outgoing {
     @Column
     private String category;  // Ex: "Alimentação", "Transporte", "Lazer"
 
+    @Column(name = "payment_type")          // ✅ adicionado
+    private String paymentType;
+
+    @Column(nullable = false)               // ✅ adicionado
+    @Builder.Default
+    private Boolean paid = false;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;  // ✅ Cada despesa pertence a um usuário

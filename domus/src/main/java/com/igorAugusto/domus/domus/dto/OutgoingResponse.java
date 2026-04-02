@@ -20,4 +20,6 @@ public class OutgoingResponse {
     private String category;
     private LocalDateTime createdAt;
     private String frequency;
+    private String paymentType; // ✅ adicionado
+    private Boolean paid;       // ✅ adicionado
 }
