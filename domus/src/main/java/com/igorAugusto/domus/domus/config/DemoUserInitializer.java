@@ -22,7 +22,7 @@ public class DemoUserInitializer {
             User user = new User();
             user.setName("Conta Demo");
             user.setEmail("demo@domus.app");
-            user.setPassword(passwordEncoder.encode("demo123"));
+            user.setPassword(passwordEncoder.encode("omed321"));
             userRepository.save(user);
         }
     }
