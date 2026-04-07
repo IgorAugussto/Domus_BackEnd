@@ -4,7 +4,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update   # em prod pode mudar para validate depois
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -12,7 +12,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:3600000}   # fallback de 1 hora se n�o tiver vari�vel
+  expiration: ${JWT_EXPIRATION:3600000}
 
 logging:
   level:
@@ -21,3 +21,12 @@ logging:
 
 app:
   demo-mode: true
+  users:
+    demo:
+      name: Conta Demo
+      email: demo@domus.app
+      password: demo123
+    admin:
+      name: Igor Augusto
+      email: igoraugusto146@gmail.com
+      password: Stepflish123
