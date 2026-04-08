@@ -60,6 +60,7 @@ public class StatementService {
                 String frequency    = transaction.get("frequency").asText();
                 String paymentType  = transaction.get("paymentType").asText();
                 boolean paid        = transaction.get("paid").asBoolean();
+                int durationInMonths = transaction.get("durationInMonths").asInt(1); 
 
                 Outgoing outgoing = Outgoing.builder()
                         .value(BigDecimal.valueOf(amount))
@@ -67,7 +68,7 @@ public class StatementService {
                         .startDate(LocalDate.parse(startDateStr))
                         .category(category)
                         .frequency(frequency)
-                        .durationInMonths(1)      // extrato é sempre One-time
+                        .durationInMonths(durationInMonths)      // extrato é sempre One-time
                         .paymentType(paymentType)
                         .paid(paid)
                         .user(user)
