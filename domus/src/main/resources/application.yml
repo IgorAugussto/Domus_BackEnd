@@ -30,3 +30,7 @@ app:
       name: Igor Augusto
       email: igoraugusto146@gmail.com
       password: Stepflish123
+
+statement:
+  service:
+    url: ${STATEMENT_SERVICE_URL:http://localhost:5000}
