@@ -80,7 +80,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "https://domus-front-end.vercel.app",
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "http://18.221.218.62:8080"
 
         )); // permite qualquer origem (ou coloque "http://localhost:5173")
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
