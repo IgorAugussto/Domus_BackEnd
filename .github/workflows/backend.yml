@@ -62,6 +62,9 @@ jobs:
             -e SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} \
             -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
             -e JWT_EXPIRATION=3600000 \
+            -e APP_DEMO_PASSWORD=${{ secrets.APP_DEMO_PASSWORD }} \
+            -e APP_ADMIN_PASSWORD=${{ secrets.APP_ADMIN_PASSWORD }} \
+            -e APP_ADMIN_LOGIN=${{ secrets.APP_ADMIN_LOGIN }} \
             --name domus-backend \
             ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
 
