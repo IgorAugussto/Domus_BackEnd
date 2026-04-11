@@ -25,11 +25,11 @@ app:
     demo:
       name: Conta Demo
       email: demo@domus.app
-      password: demo123
+      password: ${APP_DEMO_PASSWORD}
     admin:
       name: Igor Augusto
-      email: igoraugusto146@gmail.com
-      password: Stepflish123
+      email: ${APP_ADMIN_LOGIN}
+      password: ${APP_ADMIN_PASSWORD}
 
 statement:
   service:
