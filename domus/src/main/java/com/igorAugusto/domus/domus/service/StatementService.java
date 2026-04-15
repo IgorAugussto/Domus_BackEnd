@@ -35,16 +35,22 @@ public class StatementService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public StatementImportResponse importStatement(MultipartFile file, String userEmail) {
+    public StatementImportResponse importStatement(
+            MultipartFile file,
+            String dueDate,   // ✅ data de vencimento definida pelo usuário
+            String userEmail) {
 
         // 1. Busca o usuário logado
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 2. Envia o arquivo para o microserviço Python processar
+        // 2. Converte a dueDate para LocalDate — será o startDate de todas as despesas
+        LocalDate startDate = LocalDate.parse(dueDate);
+
+        // 3. Envia o arquivo para o microserviço Python processar
         JsonNode pythonResponse = callPythonService(file);
 
-        // 3. Processa as transações retornadas pelo Python
+        // 4. Processa as transações retornadas pelo Python
         JsonNode transactions = pythonResponse.get("transacoes");
         int total = pythonResponse.get("total").asInt();
 
@@ -53,22 +59,21 @@ public class StatementService {
 
         for (JsonNode transaction : transactions) {
             try {
-                String description  = transaction.get("description").asText();
-                double amount       = transaction.get("amount").asDouble();
-                String startDateStr = transaction.get("startDate").asText();
-                String category     = transaction.get("category").asText();
-                String frequency    = transaction.get("frequency").asText();
-                String paymentType  = transaction.get("paymentType").asText();
-                boolean paid        = transaction.get("paid").asBoolean();
-                int durationInMonths = transaction.get("durationInMonths").asInt(1); 
+                String description   = transaction.get("description").asText();
+                double amount        = transaction.get("amount").asDouble();
+                String category      = transaction.get("category").asText();
+                String frequency     = transaction.get("frequency").asText();
+                String paymentType   = transaction.get("paymentType").asText();
+                boolean paid         = transaction.get("paid").asBoolean();
+                int durationInMonths = transaction.get("durationInMonths").asInt(1);
 
                 Outgoing outgoing = Outgoing.builder()
                         .value(BigDecimal.valueOf(amount))
                         .description(description)
-                        .startDate(LocalDate.parse(startDateStr))
+                        .startDate(startDate)        // ✅ usa a data de vencimento do usuário
                         .category(category)
                         .frequency(frequency)
-                        .durationInMonths(durationInMonths)      // extrato é sempre One-time
+                        .durationInMonths(durationInMonths)
                         .paymentType(paymentType)
                         .paid(paid)
                         .user(user)

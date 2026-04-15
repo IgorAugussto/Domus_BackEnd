@@ -18,12 +18,13 @@ public class StatementController {
 
     /**
      * POST /api/statement/import
-     * Recebe o arquivo CSV ou OFX do frontend,
+     * Recebe o arquivo CSV ou OFX e a data de vencimento do frontend,
      * envia para o Python processar e salva no banco como despesas.
      */
     @PostMapping("/import")
     public ResponseEntity<StatementImportResponse> importStatement(
             @RequestParam("file") MultipartFile file,
+            @RequestParam("dueDate") String dueDate, // ✅ data de vencimento
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         if (file.isEmpty()) {
@@ -37,8 +38,13 @@ public class StatementController {
             return ResponseEntity.badRequest().build();
         }
 
+        if (dueDate == null || dueDate.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
         StatementImportResponse response = statementService.importStatement(
                 file,
+                dueDate,
                 userDetails.getUsername()
         );
 
