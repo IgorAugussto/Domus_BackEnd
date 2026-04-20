@@ -1,13 +1,10 @@
 name: Backend CI/CD
-
 on:
   push:
     branches: [ main ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -18,7 +15,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Login no Docker Hub  # 👈 movido para antes do build
+    - name: Login no Docker Hub
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
@@ -37,6 +34,16 @@ jobs:
     - name: Push Docker Image
       run: docker push ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
 
+    - name: Copy keystore to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          mkdir -p /home/ec2-user/keystore
+          cp /home/ec2-user/keystore.p12 /home/ec2-user/keystore/keystore.p12
+
     - name: Deploy na EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -47,17 +54,15 @@ jobs:
           echo "Parando container antigo..."
           docker stop domus-backend || true
           docker rm domus-backend || true
-
           echo "Removendo imagem antiga..."
           docker rmi ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest || true
-
           echo "Baixando nova imagem..."
           docker pull ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
-
           echo "Subindo novo container..."
           docker run -d \
             --restart always \
-            -p 8080:8080 \
+            -p 8443:8443 \
+            -v /home/ec2-user/keystore:/keystore:ro \
             -e SPRING_PROFILES_ACTIVE=prod \
             -e SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} \
             -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
@@ -66,8 +71,8 @@ jobs:
             -e APP_ADMIN_PASSWORD=${{ secrets.APP_ADMIN_PASSWORD }} \
             -e APP_ADMIN_LOGIN=${{ secrets.APP_ADMIN_LOGIN }} \
             -e STATEMENT_SERVICE_URL=http://172.31.25.108:5000 \
+            -e SSL_KEYSTORE_PASSWORD=${{ secrets.SSL_KEYSTORE_PASSWORD }} \
             --name domus-backend \
             ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
-
           echo "Containers ativos:"
           docker ps
