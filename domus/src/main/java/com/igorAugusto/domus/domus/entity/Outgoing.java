@@ -54,6 +54,14 @@ public class Outgoing {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    // Chave de deduplicação para importações (null para lançamentos manuais)
+    @Column(name = "import_hash")
+    private String importHash;
+
+    // Data original da transação no arquivo do banco (null para lançamentos manuais)
+    @Column(name = "transaction_date")
+    private LocalDate transactionDate;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

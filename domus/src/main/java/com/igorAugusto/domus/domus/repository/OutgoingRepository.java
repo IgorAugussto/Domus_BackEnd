@@ -19,6 +19,8 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
 
     List<Outgoing> findAllByUserId(Long userId);
 
+    boolean existsByImportHash(String importHash);
+
     // Soma acumulada de despesas até o mês informado (inclusive)
     @Query("""
                 SELECT COALESCE(SUM(o.value), 0)
