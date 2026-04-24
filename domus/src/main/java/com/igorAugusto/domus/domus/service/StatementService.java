@@ -12,12 +12,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,22 +42,17 @@ public class StatementService {
             String dueDate,   // ✅ data de vencimento definida pelo usuário
             String userEmail) {
 
-        // 1. Busca o usuário logado
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 2. Converte a dueDate para LocalDate — será o startDate de todas as despesas
-        LocalDate startDate = LocalDate.parse(dueDate);
-
-        // 3. Envia o arquivo para o microserviço Python processar
+        LocalDate startDate    = LocalDate.parse(dueDate);
         JsonNode pythonResponse = callPythonService(file);
-
-        // 4. Processa as transações retornadas pelo Python
-        JsonNode transactions = pythonResponse.get("transacoes");
-        int total = pythonResponse.get("total").asInt();
+        JsonNode transactions  = pythonResponse.get("transacoes");
+        int total              = pythonResponse.get("total").asInt();
 
         List<String> errors = new ArrayList<>();
-        int saved = 0;
+        int saved   = 0;
+        int skipped = 0;
 
         for (JsonNode transaction : transactions) {
             try {
@@ -67,15 +64,39 @@ public class StatementService {
                 boolean paid         = transaction.get("paid").asBoolean();
                 int durationInMonths = transaction.get("durationInMonths").asInt(1);
 
+                // Data original da transação no arquivo (para deduplicação)
+                String transactionDateStr = transaction.has("startDate")
+                        ? transaction.get("startDate").asText() : "";
+                LocalDate transactionDate = null;
+                try {
+                    if (!transactionDateStr.isBlank()) {
+                        transactionDate = LocalDate.parse(transactionDateStr);
+                    }
+                } catch (Exception ignored) {}
+
+                // Chave: userId + dataOriginal + descrição normalizada + valor
+                String hashInput = user.getId() + "|" + transactionDateStr + "|"
+                        + description.toLowerCase().trim() + "|"
+                        + String.format("%.2f", amount);
+                String importHash = DigestUtils.md5DigestAsHex(
+                        hashInput.getBytes(StandardCharsets.UTF_8));
+
+                if (outgoingRepository.existsByImportHash(importHash)) {
+                    skipped++;
+                    continue;
+                }
+
                 Outgoing outgoing = Outgoing.builder()
                         .value(BigDecimal.valueOf(amount))
                         .description(description)
-                        .startDate(startDate)        // ✅ usa a data de vencimento do usuário
+                        .startDate(startDate)
                         .category(category)
                         .frequency(frequency)
                         .durationInMonths(durationInMonths)
                         .paymentType(paymentType)
                         .paid(paid)
+                        .importHash(importHash)
+                        .transactionDate(transactionDate)
                         .user(user)
                         .build();
 
@@ -87,7 +108,7 @@ public class StatementService {
             }
         }
 
-        return new StatementImportResponse(total, saved, errors);
+        return new StatementImportResponse(total, saved, skipped, errors);
     }
 
     private JsonNode callPythonService(MultipartFile file) {

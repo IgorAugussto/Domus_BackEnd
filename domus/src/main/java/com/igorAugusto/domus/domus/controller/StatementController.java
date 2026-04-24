@@ -34,7 +34,8 @@ public class StatementController {
         String filename = file.getOriginalFilename();
         if (filename == null ||
                 (!filename.toLowerCase().endsWith(".csv") &&
-                        !filename.toLowerCase().endsWith(".ofx"))) {
+                        !filename.toLowerCase().endsWith(".ofx") &&
+                        !filename.toLowerCase().endsWith(".pdf"))) {
             return ResponseEntity.badRequest().build();
         }
 
