@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +55,12 @@ public class StatementService {
         int saved   = 0;
         int skipped = 0;
 
+        // Carrega uma vez todos os lançamentos mensais do usuário para verificar
+        // se uma parcela importada já está coberta por uma projeção existente.
+        List<Outgoing> existingMonthlyOutgoings = outgoingRepository
+                .findByUserIdAndFrequency(user.getId(), "Monthly");
+        YearMonth importMonth = YearMonth.from(startDate);
+
         for (JsonNode transaction : transactions) {
             try {
                 String description   = transaction.get("description").asText();
@@ -86,6 +93,23 @@ public class StatementService {
                     continue;
                 }
 
+                // Para parcelas mensais: verifica se o mês desta importação já está
+                // coberto por um lançamento existente com mesma descrição e valor.
+                // Isso evita duplicar projeções ao importar extratos de meses consecutivos.
+                if ("Monthly".equals(frequency)) {
+                    boolean alreadyCovered = existingMonthlyOutgoings.stream().anyMatch(o -> {
+                        if (!o.getDescription().trim().equalsIgnoreCase(description.trim())) return false;
+                        if (o.getValue().compareTo(BigDecimal.valueOf(amount)) != 0) return false;
+                        YearMonth projStart = YearMonth.from(o.getStartDate());
+                        YearMonth projEnd   = projStart.plusMonths(o.getDurationInMonths() - 1);
+                        return !importMonth.isBefore(projStart) && !importMonth.isAfter(projEnd);
+                    });
+                    if (alreadyCovered) {
+                        skipped++;
+                        continue;
+                    }
+                }
+
                 Outgoing outgoing = Outgoing.builder()
                         .value(BigDecimal.valueOf(amount))
                         .description(description)
@@ -100,7 +124,10 @@ public class StatementService {
                         .user(user)
                         .build();
 
-                outgoingRepository.save(outgoing);
+                Outgoing saved_outgoing = outgoingRepository.save(outgoing);
+                if ("Monthly".equals(frequency)) {
+                    existingMonthlyOutgoings.add(saved_outgoing);
+                }
                 saved++;
 
             } catch (Exception e) {
