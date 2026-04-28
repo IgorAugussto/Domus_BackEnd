@@ -4,6 +4,10 @@ import com.igorAugusto.domus.domus.dto.OutgoingRequest;
 import com.igorAugusto.domus.domus.dto.OutgoingResponse;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.User;
+import com.igorAugusto.domus.domus.enums.Frequency;
+import com.igorAugusto.domus.domus.exception.BusinessException;
+import com.igorAugusto.domus.domus.exception.ForbiddenException;
+import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +16,13 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,18 +31,18 @@ public class OutgoingService {
         private final OutgoingRepository outgoingRepository;
         private final UserRepository userRepository;
 
-        // Criar despesa
+        @Transactional
         public OutgoingResponse createOutgoing(OutgoingRequest request, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
                 Integer duration;
 
-                if ("One-time".equals(request.getFrequency())) {
+                if (Frequency.ONE_TIME.equals(request.getFrequency())) {
                         duration = 1;
                 } else {
                         if (request.getDurationInMonths() == null || request.getDurationInMonths() <= 0) {
-                                throw new IllegalArgumentException("Duração é obrigatória para despesas recorrentes");
+                                throw new BusinessException("Duração é obrigatória para despesas recorrentes");
                         }
                         duration = request.getDurationInMonths();
                 }
@@ -48,46 +54,42 @@ public class OutgoingService {
                                 .durationInMonths(duration)
                                 .category(request.getCategory())
                                 .frequency(request.getFrequency())
-                                .paymentType(request.getPaymentType())                          // ✅ adicionado
-                                .paid(request.getPaid() != null ? request.getPaid() : false)    // ✅ adicionado
+                                .paymentType(request.getPaymentType())
+                                .paid(request.getPaid() != null ? request.getPaid() : false)
                                 .user(user)
                                 .build();
 
-                outgoing = outgoingRepository.save(outgoing);
-
-                return convertToResponse(outgoing);
+                return convertToResponse(outgoingRepository.save(outgoing));
         }
 
-        // Listar todas as despesas do usuário
-        public List<OutgoingResponse> getAllOutgoings(String userEmail) {
+        @Transactional(readOnly = true)
+        public Page<OutgoingResponse> getAllOutgoings(String userEmail, Pageable pageable) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-                return outgoingRepository.findByUserId(user.getId())
-                                .stream()
-                                .map(this::convertToResponse)
-                                .toList();
+                return outgoingRepository.findByUserId(user.getId(), pageable)
+                                .map(this::convertToResponse);
         }
 
-        // Calcular total de despesas
+        @Transactional(readOnly = true)
         public BigDecimal getTotalOutgoing(String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
                 BigDecimal total = outgoingRepository.sumByUserId(user.getId());
                 return total != null ? total : BigDecimal.ZERO;
         }
 
-        // Atualizar despesa
+        @Transactional
         public OutgoingResponse updateOutgoing(Long outgoingId, OutgoingRequest request, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
                 Outgoing outgoing = outgoingRepository.findById(outgoingId)
-                                .orElseThrow(() -> new RuntimeException("Despesa não encontrada"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada"));
 
                 if (!outgoing.getUser().getId().equals(user.getId())) {
-                        throw new RuntimeException("Acesso negado");
+                        throw new ForbiddenException("Acesso negado");
                 }
 
                 outgoing.setValue(request.getValue());
@@ -96,38 +98,40 @@ public class OutgoingService {
                 outgoing.setDurationInMonths(request.getDurationInMonths());
                 outgoing.setFrequency(request.getFrequency());
                 outgoing.setCategory(request.getCategory());
-                outgoing.setPaymentType(request.getPaymentType());                          // ✅ adicionado
-                outgoing.setPaid(request.getPaid() != null ? request.getPaid() : false);    // ✅ adicionado
+                outgoing.setPaymentType(request.getPaymentType());
+                outgoing.setPaid(request.getPaid() != null ? request.getPaid() : false);
 
-                Outgoing updated = outgoingRepository.save(outgoing);
-
-                return convertToResponse(updated);
+                return convertToResponse(outgoingRepository.save(outgoing));
         }
 
-        // Deletar despesa
-        public void deleteOutgoing(Long outgoinId, String userEmail) {
+        @Transactional
+        public void deleteOutgoing(Long outgoingId, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-                Outgoing outgoing = outgoingRepository.findById(outgoinId)
-                                .orElseThrow(() -> new RuntimeException("Despesa não encontrada"));
+                Outgoing outgoing = outgoingRepository.findById(outgoingId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada"));
 
                 if (!outgoing.getUser().getId().equals(user.getId())) {
-                        throw new RuntimeException("Acesso negado");
+                        throw new ForbiddenException("Acesso negado");
                 }
 
                 outgoingRepository.delete(outgoing);
         }
 
+        @Transactional
         public void createFromImport(User user, Row row) {
                 Outgoing outgoing = new Outgoing();
                 outgoing.setUser(user);
                 outgoing.setDescription(getString(row.getCell(1)));
                 outgoing.setValue(getBigDecimal(row.getCell(2)));
                 outgoing.setStartDate(LocalDate.parse(getString(row.getCell(3))));
-                outgoing.setFrequency(getString(row.getCell(5)));
+                try {
+                        outgoing.setFrequency(Frequency.fromValue(getString(row.getCell(5))));
+                } catch (IllegalArgumentException ignored) {
+                        outgoing.setFrequency(null);
+                }
                 outgoing.setDurationInMonths(getInt(row.getCell(6)));
-                // paymentType e paid não são importados via planilha — ficam null/false por padrão
 
                 outgoingRepository.save(outgoing);
         }
@@ -141,17 +145,6 @@ public class OutgoingService {
                         return String.valueOf((int) cell.getNumericCellValue());
                 }
                 return null;
-        }
-
-        private boolean getBoolean(Cell cell) {
-                if (cell == null) return false;
-                if (cell.getCellType() == CellType.BOOLEAN) {
-                        return cell.getBooleanCellValue();
-                }
-                if (cell.getCellType() == CellType.STRING) {
-                        return Boolean.parseBoolean(cell.getStringCellValue());
-                }
-                return false;
         }
 
         private int getInt(Cell cell) {
@@ -182,7 +175,6 @@ public class OutgoingService {
                 return BigDecimal.ZERO;
         }
 
-        // Converter Entity → DTO de resposta
         private OutgoingResponse convertToResponse(Outgoing outgoing) {
                 return new OutgoingResponse(
                                 outgoing.getId(),
@@ -193,8 +185,8 @@ public class OutgoingService {
                                 outgoing.getCategory(),
                                 outgoing.getCreatedAt(),
                                 outgoing.getFrequency(),
-                                outgoing.getPaymentType(),  // ✅ adicionado
-                                outgoing.getPaid()          // ✅ adicionado
+                                outgoing.getPaymentType(),
+                                outgoing.getPaid()
                 );
         }
 }

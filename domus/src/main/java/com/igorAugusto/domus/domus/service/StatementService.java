@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.igorAugusto.domus.domus.dto.StatementImportResponse;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.User;
+import com.igorAugusto.domus.domus.enums.Frequency;
+import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -38,13 +41,14 @@ public class StatementService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Transactional
     public StatementImportResponse importStatement(
             MultipartFile file,
-            String dueDate,   // ✅ data de vencimento definida pelo usuário
+            String dueDate,
             String userEmail) {
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         LocalDate startDate    = LocalDate.parse(dueDate);
         JsonNode pythonResponse = callPythonService(file);
@@ -55,10 +59,8 @@ public class StatementService {
         int saved   = 0;
         int skipped = 0;
 
-        // Carrega uma vez todos os lançamentos mensais do usuário para verificar
-        // se uma parcela importada já está coberta por uma projeção existente.
         List<Outgoing> existingMonthlyOutgoings = outgoingRepository
-                .findByUserIdAndFrequency(user.getId(), "Monthly");
+                .findByUserIdAndFrequency(user.getId(), Frequency.MONTHLY);
         YearMonth importMonth = YearMonth.from(startDate);
 
         for (JsonNode transaction : transactions) {
@@ -66,12 +68,19 @@ public class StatementService {
                 String description   = transaction.get("description").asText();
                 double amount        = transaction.get("amount").asDouble();
                 String category      = transaction.get("category").asText();
-                String frequency     = transaction.get("frequency").asText();
+                String frequencyStr  = transaction.get("frequency").asText();
                 String paymentType   = transaction.get("paymentType").asText();
                 boolean paid         = transaction.get("paid").asBoolean();
                 int durationInMonths = transaction.get("durationInMonths").asInt(1);
 
-                // Data original da transação no arquivo (para deduplicação)
+                Frequency frequency;
+                try {
+                    frequency = Frequency.fromValue(frequencyStr);
+                } catch (IllegalArgumentException e) {
+                    errors.add("Frequência inválida para transação '" + description + "': " + frequencyStr);
+                    continue;
+                }
+
                 String transactionDateStr = transaction.has("startDate")
                         ? transaction.get("startDate").asText() : "";
                 LocalDate transactionDate = null;
@@ -81,7 +90,6 @@ public class StatementService {
                     }
                 } catch (Exception ignored) {}
 
-                // Chave: userId + dataOriginal + descrição normalizada + valor
                 String hashInput = user.getId() + "|" + transactionDateStr + "|"
                         + description.toLowerCase().trim() + "|"
                         + String.format("%.2f", amount);
@@ -93,10 +101,7 @@ public class StatementService {
                     continue;
                 }
 
-                // Para parcelas mensais: verifica se o mês desta importação já está
-                // coberto por um lançamento existente com mesma descrição e valor.
-                // Isso evita duplicar projeções ao importar extratos de meses consecutivos.
-                if ("Monthly".equals(frequency)) {
+                if (Frequency.MONTHLY.equals(frequency)) {
                     boolean alreadyCovered = existingMonthlyOutgoings.stream().anyMatch(o -> {
                         if (!o.getDescription().trim().equalsIgnoreCase(description.trim())) return false;
                         if (o.getValue().compareTo(BigDecimal.valueOf(amount)) != 0) return false;
@@ -124,14 +129,14 @@ public class StatementService {
                         .user(user)
                         .build();
 
-                Outgoing saved_outgoing = outgoingRepository.save(outgoing);
-                if ("Monthly".equals(frequency)) {
-                    existingMonthlyOutgoings.add(saved_outgoing);
+                Outgoing savedOutgoing = outgoingRepository.save(outgoing);
+                if (Frequency.MONTHLY.equals(frequency)) {
+                    existingMonthlyOutgoings.add(savedOutgoing);
                 }
                 saved++;
 
             } catch (Exception e) {
-                errors.add("Error saving transaction: " + e.getMessage());
+                errors.add("Erro ao salvar transação: " + e.getMessage());
             }
         }
 
@@ -166,7 +171,7 @@ public class StatementService {
             return objectMapper.readTree(response.getBody());
 
         } catch (Exception e) {
-            throw new RuntimeException("Error communicating with Python service: " + e.getMessage());
+            throw new RuntimeException("Erro ao comunicar com o serviço Python: " + e.getMessage());
         }
     }
 }

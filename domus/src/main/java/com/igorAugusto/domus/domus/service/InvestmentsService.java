@@ -1,17 +1,20 @@
 package com.igorAugusto.domus.domus.service;
 
-
 import com.igorAugusto.domus.domus.dto.InvestmentsRequest;
 import com.igorAugusto.domus.domus.dto.InvestmentsResponse;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.User;
+import com.igorAugusto.domus.domus.exception.ForbiddenException;
+import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
 import com.igorAugusto.domus.domus.repository.InvestmentsRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,10 +23,10 @@ public class InvestmentsService {
         private final InvestmentsRepository investmentsRepository;
         private final UserRepository userRepository;
 
+        @Transactional
         public InvestmentsResponse createInvestment(InvestmentsRequest request, String userEmail) {
-
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
                 Investments investments = Investments.builder()
                                 .value(request.getValue())
@@ -35,40 +38,37 @@ public class InvestmentsService {
                                 .user(user)
                                 .build();
 
-                // 3. Salva no banco
-                investments = investmentsRepository.save(investments);
-
-                // 4. Retorna DTO de resposta
-                return convertToResponse(investments);
+                return convertToResponse(investmentsRepository.save(investments));
         }
 
-        public List<InvestmentsResponse> getAllInvestments(String userEmail) {
+        @Transactional(readOnly = true)
+        public Page<InvestmentsResponse> getAllInvestments(String userEmail, Pageable pageable) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-                return investmentsRepository.findByUserId(user.getId())
-                                .stream()
-                                .map(this::convertToResponse)
-                                .toList();
+                return investmentsRepository.findByUserId(user.getId(), pageable)
+                                .map(this::convertToResponse);
         }
 
+        @Transactional(readOnly = true)
         public BigDecimal getTotalInvestments(String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
                 BigDecimal total = investmentsRepository.sumByUserId(user.getId());
                 return total != null ? total : BigDecimal.ZERO;
         }
 
+        @Transactional
         public InvestmentsResponse updateInvestment(Long investmentsId, InvestmentsRequest request, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
                 Investments investments = investmentsRepository.findById(investmentsId)
-                                .orElseThrow(() -> new RuntimeException("Investimentos não encontrados"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Investimento não encontrado"));
 
                 if (!investments.getUser().getId().equals(user.getId())) {
-                        throw new RuntimeException("Acesso negado");
+                        throw new ForbiddenException("Acesso negado");
                 }
 
                 investments.setValue(request.getValue());
@@ -77,20 +77,19 @@ public class InvestmentsService {
                 investments.setEndDate(request.getEndDate());
                 investments.setTypeInvestments(request.getTypeInvestments());
 
-                Investments updated = investmentsRepository.save(investments);
-
-                return convertToResponse(updated);
+                return convertToResponse(investmentsRepository.save(investments));
         }
 
+        @Transactional
         public void deleteInvestment(Long investmentsId, String userEmail) {
                 User user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
                 Investments investments = investmentsRepository.findById(investmentsId)
-                                .orElseThrow(() -> new RuntimeException("Investimentos não encontrados"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Investimento não encontrado"));
 
                 if (!investments.getUser().getId().equals(user.getId())) {
-                        throw new RuntimeException("Acesso negado");
+                        throw new ForbiddenException("Acesso negado");
                 }
 
                 investmentsRepository.delete(investments);

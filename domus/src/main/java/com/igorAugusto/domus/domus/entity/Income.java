@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.igorAugusto.domus.domus.enums.Frequency;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +31,7 @@ public class Income {
     private String description;  // Ex: "Salário de Novembro"
 
     @Column(nullable = false)
-    private String frequency;
+    private Frequency frequency;
 
     @Column(nullable = false)
     private LocalDate startDate;

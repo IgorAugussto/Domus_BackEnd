@@ -1,5 +1,6 @@
 package com.igorAugusto.domus.domus.dto;
 
+import com.igorAugusto.domus.domus.enums.Frequency;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,7 +20,7 @@ public class OutgoingResponse {
     private Integer durationInMonths;
     private String category;
     private LocalDateTime createdAt;
-    private String frequency;
-    private String paymentType; // ✅ adicionado
-    private Boolean paid;       // ✅ adicionado
+    private Frequency frequency;
+    private String paymentType;
+    private Boolean paid;
 }

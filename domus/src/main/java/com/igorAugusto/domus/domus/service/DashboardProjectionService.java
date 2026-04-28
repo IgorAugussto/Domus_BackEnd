@@ -4,6 +4,7 @@ import com.igorAugusto.domus.domus.dto.MonthlyProjectionResponse;
 import com.igorAugusto.domus.domus.entity.Income;
 import com.igorAugusto.domus.domus.entity.Investments;
 import com.igorAugusto.domus.domus.entity.Outgoing;
+import com.igorAugusto.domus.domus.enums.Frequency;
 import com.igorAugusto.domus.domus.repository.IncomeRepository;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.InvestmentsRepository;
@@ -288,7 +289,7 @@ public class DashboardProjectionService {
 
                 // ✅ CASO 1: INCOME RECORRENTE MENSAL
                 if (Boolean.TRUE.equals(income.getRecurring())
-                        && "Monthly".equalsIgnoreCase(income.getFrequency())) {
+                        && Frequency.MONTHLY.equals(income.getFrequency())) {
 
                     item.setIncome(
                             item.getIncome().add(income.getValue()));

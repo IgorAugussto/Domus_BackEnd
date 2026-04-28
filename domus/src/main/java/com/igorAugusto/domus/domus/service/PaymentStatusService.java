@@ -4,11 +4,16 @@ import com.igorAugusto.domus.domus.dto.PaymentMonthResponse;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.PaymentStatus;
 import com.igorAugusto.domus.domus.entity.User;
+import com.igorAugusto.domus.domus.enums.Frequency;
+import com.igorAugusto.domus.domus.exception.ForbiddenException;
+import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.PaymentStatusRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.YearMonth;
 import java.util.List;
@@ -22,20 +27,14 @@ public class PaymentStatusService {
     private final OutgoingRepository outgoingRepository;
     private final UserRepository userRepository;
 
-    /**
-     * Retorna todas as despesas ativas em um mês específico com seus status.
-     * Uma despesa é "ativa" em um mês se:
-     * - É One-time: o mês é igual ao mês do startDate
-     * - É Monthly: o mês está entre startDate e startDate + durationInMonths - 1
-     */
+    @Transactional(readOnly = true)
     public List<PaymentMonthResponse> getPaymentsByMonth(String userEmail, String yearMonth) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         YearMonth targetMonth = YearMonth.parse(yearMonth);
 
-        // Busca todas as despesas do usuário que são Cartão de Crédito ou Boleto
-        List<Outgoing> outgoings = outgoingRepository.findByUserId(user.getId())
+        List<Outgoing> outgoings = outgoingRepository.findByUserId(user.getId(), Pageable.unpaged())
                 .stream()
                 .filter(o -> o.getPaymentType() != null &&
                         (o.getPaymentType().equals("Cartão de Crédito") ||
@@ -45,7 +44,6 @@ public class PaymentStatusService {
         return outgoings.stream()
                 .filter(outgoing -> isActiveInMonth(outgoing, targetMonth))
                 .map(outgoing -> {
-                    // Busca o status específico desse mês — se não existir, é false (pendente)
                     Optional<PaymentStatus> status = paymentStatusRepository
                             .findByOutgoingIdAndYearMonth(outgoing.getId(), yearMonth);
 
@@ -66,10 +64,7 @@ public class PaymentStatusService {
                 .toList();
     }
 
-    /**
-     * Marca uma despesa como paga ou pendente em um mês específico.
-     * Usa upsert: cria o registro se não existir, atualiza se já existir.
-     */
+    @Transactional
     public PaymentMonthResponse togglePaymentStatus(
             String userEmail,
             Long outgoingId,
@@ -77,17 +72,15 @@ public class PaymentStatusService {
             boolean paid) {
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         Outgoing outgoing = outgoingRepository.findById(outgoingId)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Despesa não encontrada"));
 
-        // Garante que a despesa pertence ao usuário
         if (!outgoing.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new ForbiddenException("Acesso negado");
         }
 
-        // Upsert: atualiza se existir, cria se não existir
         PaymentStatus status = paymentStatusRepository
                 .findByOutgoingIdAndYearMonth(outgoingId, yearMonth)
                 .orElse(PaymentStatus.builder()
@@ -111,17 +104,13 @@ public class PaymentStatusService {
         );
     }
 
-    /**
-     * Verifica se uma despesa está ativa em um mês específico.
-     */
     private boolean isActiveInMonth(Outgoing outgoing, YearMonth targetMonth) {
         YearMonth startMonth = YearMonth.from(outgoing.getStartDate());
 
-        if ("One-time".equals(outgoing.getFrequency())) {
+        if (Frequency.ONE_TIME.equals(outgoing.getFrequency())) {
             return startMonth.equals(targetMonth);
         }
 
-        // Monthly: ativa entre startMonth e startMonth + durationInMonths - 1
         YearMonth endMonth = startMonth.plusMonths(outgoing.getDurationInMonths() - 1);
         return !targetMonth.isBefore(startMonth) && !targetMonth.isAfter(endMonth);
     }

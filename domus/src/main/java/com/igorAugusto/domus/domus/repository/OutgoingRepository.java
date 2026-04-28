@@ -1,6 +1,9 @@
 package com.igorAugusto.domus.domus.repository;
 
 import com.igorAugusto.domus.domus.entity.Outgoing;
+import com.igorAugusto.domus.domus.enums.Frequency;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +15,7 @@ import java.util.List;
 @Repository
 public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
 
-    List<Outgoing> findByUserId(Long userId);
+    Page<Outgoing> findByUserId(Long userId, Pageable pageable);
 
     @Query("SELECT SUM(o.value) FROM Outgoing o WHERE o.user.id = :userId")
     BigDecimal sumByUserId(@Param("userId") Long userId);
@@ -21,7 +24,7 @@ public interface OutgoingRepository extends JpaRepository<Outgoing, Long> {
 
     boolean existsByImportHash(String importHash);
 
-    List<Outgoing> findByUserIdAndFrequency(Long userId, String frequency);
+    List<Outgoing> findByUserIdAndFrequency(Long userId, Frequency frequency);
 
     // Soma acumulada de despesas até o mês informado (inclusive)
     @Query("""

@@ -1,5 +1,6 @@
 package com.igorAugusto.domus.domus.dto;
 
+import com.igorAugusto.domus.domus.enums.Frequency;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -25,11 +26,11 @@ public class OutgoingRequest {
 
     private Integer durationInMonths;
 
-    private String frequency;
+    private Frequency frequency;
 
     private String category;
 
-    private String paymentType; // ✅ adicionado — ex: "Cartão de Crédito" ou "Boleto"
+    private String paymentType;
 
-    private Boolean paid;       // ✅ adicionado — true = pago, false = pendente
+    private Boolean paid;
 }

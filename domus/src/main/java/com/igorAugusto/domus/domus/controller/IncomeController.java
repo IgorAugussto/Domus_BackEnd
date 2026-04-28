@@ -5,13 +5,15 @@ import com.igorAugusto.domus.domus.dto.IncomeResponse;
 import com.igorAugusto.domus.domus.service.IncomeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/income")
@@ -20,7 +22,6 @@ public class IncomeController {
 
         private final IncomeService incomeService;
 
-        // POST /api/income - Criar receita
         @PostMapping
         public ResponseEntity<IncomeResponse> createIncome(
                 @RequestBody @Valid IncomeRequest request,
@@ -29,15 +30,14 @@ public class IncomeController {
                         incomeService.createIncome(request, userDetails.getUsername()));
         }
 
-        // GET /api/income - Listar receitas
         @GetMapping
-        public ResponseEntity<List<IncomeResponse>> getAllIncomes(
-                @AuthenticationPrincipal UserDetails userDetails) {
+        public ResponseEntity<Page<IncomeResponse>> getAllIncomes(
+                @AuthenticationPrincipal UserDetails userDetails,
+                @PageableDefault(size = 20, sort = "startDate") Pageable pageable) {
                 return ResponseEntity.ok(
-                        incomeService.getAllIncomes(userDetails.getUsername()));
+                        incomeService.getAllIncomes(userDetails.getUsername(), pageable));
         }
 
-        // GET /api/income/total - Total de receitas
         @GetMapping("/total")
         public ResponseEntity<BigDecimal> getTotalIncome(
                 @AuthenticationPrincipal UserDetails userDetails) {
@@ -61,5 +61,4 @@ public class IncomeController {
                 incomeService.deleteIncome(id, userDetails.getUsername());
                 return ResponseEntity.noContent().build();
         }
-
 }

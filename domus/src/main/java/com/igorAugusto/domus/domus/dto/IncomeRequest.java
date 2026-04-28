@@ -1,5 +1,6 @@
 package com.igorAugusto.domus.domus.dto;
 
+import com.igorAugusto.domus.domus.enums.Frequency;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,12 +22,11 @@ public class IncomeRequest {
     @NotNull(message = "Data é obrigatória")
     private LocalDate startDate;
 
-    
-    private LocalDate endDate; 
+    private LocalDate endDate;
 
     private Boolean recurring;
-    
-    private String frequency;
 
-    private String category;  // Opcional
+    private Frequency frequency;
+
+    private String category;
 }
