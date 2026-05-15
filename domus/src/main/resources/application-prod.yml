@@ -4,5 +4,19 @@ spring:
     username: postgres.svxdmuthiycwgqgxpwyn
     password: ${SUPABASE_DB_PASSWORD}
 
+  ssl:
+    bundle:
+      jks:
+        web-server:
+          keystore:
+            location: file:/keystore/keystore.p12
+            password: ${SSL_KEYSTORE_PASSWORD}
+            type: PKCS12
+
+server:
+  port: 8443
+  ssl:
+    bundle: web-server
+
 app:
   demo-mode: true

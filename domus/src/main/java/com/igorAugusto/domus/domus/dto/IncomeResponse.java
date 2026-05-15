@@ -1,5 +1,6 @@
 package com.igorAugusto.domus.domus.dto;
 
+import com.igorAugusto.domus.domus.enums.Frequency;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,5 +21,5 @@ public class IncomeResponse {
     private Boolean recurring;
     private String category;
     private LocalDateTime createdAt;
-    private String frequency;
+    private Frequency frequency;
 }

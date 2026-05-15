@@ -6,13 +6,15 @@ import com.igorAugusto.domus.domus.service.OutgoingService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/costs")
@@ -21,7 +23,6 @@ public class OutgoingController {
 
     private final OutgoingService outgoingService;
 
-    // POST /api/outgoing - Criar despesa
     @PostMapping
     public ResponseEntity<OutgoingResponse> createOutgoing(
             @RequestBody @Valid OutgoingRequest request,
@@ -32,17 +33,16 @@ public class OutgoingController {
         );
     }
 
-    // GET /api/outgoing - Listar despesas
     @GetMapping
-    public ResponseEntity<List<OutgoingResponse>> getAllOutgoings(
-            @AuthenticationPrincipal UserDetails userDetails
+    public ResponseEntity<Page<OutgoingResponse>> getAllOutgoings(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 20, sort = "startDate") Pageable pageable
     ) {
         return ResponseEntity.ok(
-                outgoingService.getAllOutgoings(userDetails.getUsername())
+                outgoingService.getAllOutgoings(userDetails.getUsername(), pageable)
         );
     }
 
-    // GET /api/outgoing/total - Total de despesas
     @GetMapping("/total")
     public ResponseEntity<BigDecimal> getTotalOutgoing(
             @AuthenticationPrincipal UserDetails userDetails
@@ -53,20 +53,19 @@ public class OutgoingController {
     }
 
     @PutMapping("/{id}")
-        public ResponseEntity<OutgoingResponse> updateOutgoing(
-                        @PathVariable Long id,
-                        @RequestBody @Valid OutgoingRequest request,
-                        @AuthenticationPrincipal UserDetails userDetails) {
-                return ResponseEntity.ok(
-                                outgoingService.updateOutgoing(id, request, userDetails.getUsername()));
-        }
+    public ResponseEntity<OutgoingResponse> updateOutgoing(
+            @PathVariable Long id,
+            @RequestBody @Valid OutgoingRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                outgoingService.updateOutgoing(id, request, userDetails.getUsername()));
+    }
 
-        @DeleteMapping("/{id}")
-        public ResponseEntity<Void> deleteIncome(
-                        @PathVariable Long id,
-                        @AuthenticationPrincipal UserDetails userDetails) {
-                outgoingService.deleteOutgoing(id, userDetails.getUsername());
-                return ResponseEntity.noContent().build();
-        }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOutgoing(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        outgoingService.deleteOutgoing(id, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
 }
-

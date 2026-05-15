@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.igorAugusto.domus.domus.enums.Frequency;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,7 +34,7 @@ public class Outgoing {
     private LocalDate startDate;  // Data que gastou
 
     @Column(nullable = false)
-    private String frequency;
+    private Frequency frequency;
 
     @Column(name = "duration_in_months", nullable = false)
     private Integer durationInMonths;
@@ -53,6 +55,14 @@ public class Outgoing {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    // Chave de deduplicação para importações (null para lançamentos manuais)
+    @Column(name = "import_hash")
+    private String importHash;
+
+    // Data original da transação no arquivo do banco (null para lançamentos manuais)
+    @Column(name = "transaction_date")
+    private LocalDate transactionDate;
 
     @PrePersist
     protected void onCreate() {

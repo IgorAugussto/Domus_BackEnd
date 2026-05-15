@@ -1,6 +1,8 @@
 package com.igorAugusto.domus.domus.repository;
 
 import com.igorAugusto.domus.domus.entity.Investments;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +15,7 @@ import java.util.List;
 @Repository
 public interface InvestmentsRepository extends JpaRepository<Investments, Long> {
 
-    List<Investments> findByUserId(Long userId);
+    Page<Investments> findByUserId(Long userId, Pageable pageable);
 
     List<Investments> findByUserIdAndCreatedAtBetween(Long userId, LocalDate start, LocalDate end);
 

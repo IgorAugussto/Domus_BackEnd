@@ -6,21 +6,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OutgoingResponse {
-    private Long id;
-    private BigDecimal value;
+public class PaymentMonthResponse {
+
+    private Long outgoingId;
     private String description;
-    private LocalDate startDate;
-    private Integer durationInMonths;
+    private BigDecimal value;
     private String category;
-    private LocalDateTime createdAt;
-    private Frequency frequency;
     private String paymentType;
+    private Frequency frequency;
+    private String startDate;
+    private String yearMonth;
     private Boolean paid;
 }

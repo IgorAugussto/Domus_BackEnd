@@ -26,10 +26,10 @@ import java.util.Arrays;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    
+
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
-    
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -37,28 +37,26 @@ public class SecurityConfig {
 
                 // Desabilita CSRF (não precisa com JWT)
                 .csrf(AbstractHttpConfigurer::disable)
-                
+
                 // Configura autorização
                 .authorizeHttpRequests(auth -> auth
                         // Rotas públicas (não precisa token)
                         .requestMatchers("/api/auth/**").permitAll()
-                        
+
                         // Todas as outras rotas precisam de autenticação
-                        .anyRequest().authenticated()
-                )
-                
+                        .anyRequest().authenticated())
+
                 // Não usa sessão (JWT é stateless)
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 // Adiciona filtro JWT
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
-    
+
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -66,12 +64,12 @@ public class SecurityConfig {
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
-    
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();  // Criptografa senhas
+        return new BCryptPasswordEncoder(); // Criptografa senhas
     }
-    
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -81,11 +79,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList(
+                "https://domus-front-end.vercel.app",
+                "https://d3r6rgf1tqyenv.cloudfront.net",
+                "https://domusapp.dev.br",
                 "http://localhost:5173",
-                "http://domus-frontend-igoraugusto.s3-website.us-east-2.amazonaws.com",
-                "https://*.vercel.app",
-                "https://domus-front-end.vercel.app" 
-        ));           // permite qualquer origem (ou coloque "http://localhost:5173")
+                "http://18.221.218.62:8080"
+
+        )); // permite qualquer origem (ou coloque "http://localhost:5173")
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true); // importante se for usar cookies ou Authorization header

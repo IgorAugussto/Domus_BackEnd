@@ -73,9 +73,10 @@ public class DashboardService {
                 String monthStr
         ) {
                 YearMonth targetMonth = YearMonth.parse(monthStr);
+                int year = targetMonth.getYear();
 
                 List<MonthlyProjectionResponse> projection =
-                        dashboardProjectionService.projectNext12Months(userId);
+                        dashboardProjectionService.projectFixedYear(userId, year);
 
                 // 🔥 ordena por mês (garantia)
                 projection.sort(Comparator.comparing(MonthlyProjectionResponse::getMonth));
