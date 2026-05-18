@@ -27,7 +27,7 @@ public class InvestmentsRequest {
     private String description;
 
     @NotNull(message = "Retorno esperado é obrigatório")
-    private double expectedReturn;
+    private BigDecimal expectedReturn;
 
 
 

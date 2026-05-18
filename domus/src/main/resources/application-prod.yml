@@ -20,3 +20,9 @@ server:
 
 app:
   demo-mode: true
+  cookie:
+    secure: true
+
+spring:
+  flyway:
+    clean-disabled: true  # NUNCA apaga dados em produção

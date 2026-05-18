@@ -76,6 +76,7 @@ public class InvestmentsService {
                 investments.setStartDate(request.getStartDate());
                 investments.setEndDate(request.getEndDate());
                 investments.setTypeInvestments(request.getTypeInvestments());
+                investments.setExpectedReturn(request.getExpectedReturn());
 
                 return convertToResponse(investmentsRepository.save(investments));
         }

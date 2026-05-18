@@ -1,5 +1,6 @@
 package com.igorAugusto.domus.domus.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,8 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthResponse {
+    @JsonIgnore
     private String token;
-    private String tipo = "Bearer";  // Tipo do token
+    private String tipo;
     private String email;
     private String nome;
 }

@@ -113,8 +113,7 @@ public class DashboardProjectionService {
         for (Investments inv : investments) {
             BigDecimal initialValue = inv.getValue();
 
-            BigDecimal monthlyRate = BigDecimal
-                    .valueOf(inv.getExpectedReturn())
+            BigDecimal monthlyRate = inv.getExpectedReturn()
                     .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
                     .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
 
@@ -219,8 +218,7 @@ public class DashboardProjectionService {
 
             BigDecimal initialValue = inv.getValue();
 
-            BigDecimal monthlyRate = BigDecimal
-                    .valueOf(inv.getExpectedReturn())
+            BigDecimal monthlyRate = inv.getExpectedReturn()
                     .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
                     .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
 
@@ -328,8 +326,7 @@ public class DashboardProjectionService {
 
             BigDecimal initialValue = inv.getValue();
 
-            BigDecimal monthlyRate = BigDecimal
-                    .valueOf(inv.getExpectedReturn())
+            BigDecimal monthlyRate = inv.getExpectedReturn()
                     .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
                     .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
 

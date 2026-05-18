@@ -48,7 +48,7 @@ public class DashboardService {
 
                 BigDecimal investmentGains = investments.stream()
                                 .map(inv -> inv.getValue().multiply(
-                                                BigDecimal.valueOf(inv.getExpectedReturn() / 100)))
+                                                inv.getExpectedReturn().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)))
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 BigDecimal netIncome = totalIncome.subtract(totalCost);

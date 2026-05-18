@@ -34,8 +34,8 @@ public class Investments {
     @Column(nullable = false)
     private LocalDate endDate;
 
-    @Column(nullable = false)
-    private double expectedReturn;
+    @Column(nullable = false, precision = 10, scale = 4)
+    private BigDecimal expectedReturn;
 
     private String description;
 
