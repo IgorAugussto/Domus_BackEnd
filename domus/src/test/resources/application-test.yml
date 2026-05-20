@@ -18,6 +18,9 @@ jwt:
   secret: dGVzdC1zZWNyZXQtZm9yLWNpLW9ubHktbm90LWZvci1wcm9kdWN0aW9uLXVzZQ==
   expiration: 3600000
 
+# JwtService usa @Value("${JWT_SECRET}") diretamente — precisa da chave em maiúsculas
+JWT_SECRET: dGVzdC1zZWNyZXQtZm9yLWNpLW9ubHktbm90LWZvci1wcm9kdWN0aW9uLXVzZQ==
+
 app:
   demo-mode: false
   users:

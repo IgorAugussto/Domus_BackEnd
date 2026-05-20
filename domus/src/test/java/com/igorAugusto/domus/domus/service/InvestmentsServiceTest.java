@@ -64,13 +64,13 @@ class InvestmentsServiceTest {
                 .typeInvestments("ITAUSA4")
                 .startDate(START_DATE)
                 .endDate(END_DATE)
-                .expectedReturn(12.5)
+                .expectedReturn(BigDecimal.valueOf(12.5))
                 .description("Ação Itaúsa")
                 .user(user)
                 .build();
 
         request = new InvestmentsRequest(
-                BigDecimal.valueOf(1000.00), "ITAUSA4", START_DATE, END_DATE, "Ação Itaúsa", 12.5
+                BigDecimal.valueOf(1000.00), "ITAUSA4", START_DATE, END_DATE, "Ação Itaúsa", BigDecimal.valueOf(12.5)
         );
     }
 
@@ -86,7 +86,7 @@ class InvestmentsServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getTypeInvestments()).isEqualTo("ITAUSA4");
         assertThat(response.getValue()).isEqualByComparingTo(BigDecimal.valueOf(1000.00));
-        assertThat(response.getExpectedReturn()).isEqualTo(12.5);
+        assertThat(response.getExpectedReturn()).isEqualByComparingTo(BigDecimal.valueOf(12.5));
         verify(investmentsRepository, times(1)).save(any(Investments.class));
     }
 
