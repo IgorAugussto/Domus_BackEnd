@@ -2,6 +2,17 @@ spring:
   application:
     name: domus
 
+  # ── RabbitMQ ────────────────────────────────────────────────────────────────
+  # Valores padrão para rodar localmente sem Docker (rabbitmq instalado na máquina).
+  # Em Docker: RABBITMQ_HOST=rabbitmq (nome do serviço no docker-compose).
+  # Em produção (EC2): RABBITMQ_HOST=localhost (Rabbit instalado no mesmo servidor).
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+
   jpa:
     hibernate:
       ddl-auto: validate  # Flyway é o dono do schema — Hibernate só valida

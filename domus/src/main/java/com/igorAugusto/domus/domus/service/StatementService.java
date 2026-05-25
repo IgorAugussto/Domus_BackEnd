@@ -2,14 +2,21 @@ package com.igorAugusto.domus.domus.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.igorAugusto.domus.domus.dto.ImportJobStatusResponse;
 import com.igorAugusto.domus.domus.dto.StatementImportResponse;
+import com.igorAugusto.domus.domus.entity.ImportJob;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.enums.Frequency;
+import com.igorAugusto.domus.domus.enums.ImportJobStatus;
+import com.igorAugusto.domus.domus.exception.ForbiddenException;
 import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
+import com.igorAugusto.domus.domus.messaging.StatementImportProducer;
+import com.igorAugusto.domus.domus.repository.ImportJobRepository;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -24,43 +31,107 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StatementService {
 
     private final OutgoingRepository outgoingRepository;
     private final UserRepository userRepository;
+    private final ImportJobRepository importJobRepository;
+    private final StatementImportProducer statementImportProducer;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper; // injetado pelo Spring Boot (já configurado)
 
     @Value("${statement.service.url:http://localhost:5000}")
     private String statementServiceUrl;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // ════════════════════════════════════════════════════════════════════════
+    // 1. ENQUEUE — Controller chama aqui. Rápido: persiste job + publica Rabbit
+    // ════════════════════════════════════════════════════════════════════════
 
+    /**
+     * Persiste o arquivo no banco, cria o job com status PENDING e publica
+     * o jobId no RabbitMQ. Retorna o jobId imediatamente (não bloqueia o usuário).
+     */
     @Transactional
-    public StatementImportResponse importStatement(
-            MultipartFile file,
-            String dueDate,
-            String userEmail) {
+    public String enqueueImport(MultipartFile file, String dueDate, String userEmail) {
+        try {
+            String jobId = UUID.randomUUID().toString();
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+            ImportJob job = ImportJob.builder()
+                    .id(jobId)
+                    .userEmail(userEmail)
+                    .dueDate(dueDate)
+                    .fileBytes(file.getBytes())
+                    .originalFilename(file.getOriginalFilename())
+                    .status(ImportJobStatus.PENDING)
+                    .createdAt(LocalDateTime.now())
+                    .build();
 
-        LocalDate startDate    = LocalDate.parse(dueDate);
-        JsonNode pythonResponse = callPythonService(file);
-        JsonNode transactions  = pythonResponse.get("transacoes");
-        int total              = pythonResponse.get("total").asInt();
+            importJobRepository.save(job);
+            statementImportProducer.sendImportJob(jobId);
 
-        List<String> errors = new ArrayList<>();
+            log.info("[Statement] Job enfileirado → jobId={}, user={}, arquivo={}",
+                    jobId, userEmail, file.getOriginalFilename());
+
+            return jobId;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao enfileirar importação: " + e.getMessage(), e);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // 2. PROCESS — Chamado pelo StatementImportConsumer (3 etapas separadas)
+    //    Cada método abaixo é @Transactional e chamado de FORA desta classe,
+    //    garantindo que o proxy Spring intercepte e abra/feche a transação.
+    // ════════════════════════════════════════════════════════════════════════
+
+    /** Etapa 1 (Tx curta): marca o job como PROCESSING. */
+    @Transactional
+    public void markJobProcessing(String jobId) {
+        ImportJob job = importJobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job não encontrado: " + jobId));
+        job.setStatus(ImportJobStatus.PROCESSING);
+        job.setUpdatedAt(LocalDateTime.now());
+        importJobRepository.save(job);
+        log.info("[Statement] Job {} → PROCESSING", jobId);
+    }
+
+    /**
+     * Etapa 2 (Tx principal): chama o Python, processa as transações,
+     * salva os outgoings e marca o job como DONE.
+     *
+     * Se qualquer passo falhar, a transação faz rollback (outgoings não
+     * são salvos) e o caller (Consumer) captura a exceção e chama markJobError.
+     */
+    @Transactional
+    public void doProcessImportJob(String jobId) {
+        ImportJob job = importJobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job não encontrado: " + jobId));
+
+        User user = userRepository.findByEmail(job.getUserEmail())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Usuário não encontrado: " + job.getUserEmail()));
+
+        LocalDate startDate     = LocalDate.parse(job.getDueDate());
+        JsonNode pythonResponse = callPythonServiceWithBytes(job.getFileBytes(), job.getOriginalFilename());
+        JsonNode transactions   = pythonResponse.get("transacoes");
+        int total               = pythonResponse.get("total").asInt();
+
+        List<String> errors  = new ArrayList<>();
         int saved   = 0;
         int skipped = 0;
 
-        List<Outgoing> existingMonthlyOutgoings = outgoingRepository
-                .findByUserIdAndFrequency(user.getId(), Frequency.MONTHLY);
+        List<Outgoing> existingMonthlyOutgoings =
+                outgoingRepository.findByUserIdAndFrequency(user.getId(), Frequency.MONTHLY);
         YearMonth importMonth = YearMonth.from(startDate);
 
         for (JsonNode transaction : transactions) {
@@ -77,7 +148,7 @@ public class StatementService {
                 try {
                     frequency = Frequency.fromValue(frequencyStr);
                 } catch (IllegalArgumentException e) {
-                    errors.add("Frequência inválida para transação '" + description + "': " + frequencyStr);
+                    errors.add("Frequência inválida para '" + description + "': " + frequencyStr);
                     continue;
                 }
 
@@ -140,18 +211,78 @@ public class StatementService {
             }
         }
 
-        return new StatementImportResponse(total, saved, skipped, errors);
+        // Persiste o resultado e marca como DONE (ainda na mesma transação)
+        try {
+            StatementImportResponse result = new StatementImportResponse(total, saved, skipped, errors);
+            job.setStatus(ImportJobStatus.DONE);
+            job.setResultJson(objectMapper.writeValueAsString(result));
+            job.setUpdatedAt(LocalDateTime.now());
+            importJobRepository.save(job);
+            log.info("[Statement] Job {} → DONE (saved={}, skipped={}, errors={})",
+                    jobId, saved, skipped, errors.size());
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao finalizar job: " + e.getMessage(), e);
+        }
     }
 
-    private JsonNode callPythonService(MultipartFile file) {
+    /** Etapa 3 (Tx curta, chamada pelo consumer em caso de erro): marca como ERROR. */
+    @Transactional
+    public void markJobError(String jobId, String errorMessage) {
+        try {
+            ImportJob job = importJobRepository.findById(jobId)
+                    .orElseThrow(() -> new RuntimeException("Job não encontrado: " + jobId));
+            String safeMsg = errorMessage != null
+                    ? errorMessage.replace("\"", "'").replace("\n", " ")
+                    : "Erro desconhecido";
+            job.setStatus(ImportJobStatus.ERROR);
+            job.setResultJson("{\"error\":\"" + safeMsg + "\"}");
+            job.setUpdatedAt(LocalDateTime.now());
+            importJobRepository.save(job);
+            log.error("[Statement] Job {} → ERROR: {}", jobId, safeMsg);
+        } catch (Exception e) {
+            log.error("[Statement] Não foi possível marcar job {} como ERROR: {}", jobId, e.getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // 3. STATUS — Polling do frontend via GET /api/statement/status/{jobId}
+    // ════════════════════════════════════════════════════════════════════════
+
+    public ImportJobStatusResponse getJobStatus(String jobId, String userEmail) {
+        ImportJob job = importJobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job de importação não encontrado"));
+
+        // Segurança: usuário só pode consultar seus próprios jobs
+        if (!job.getUserEmail().equals(userEmail)) {
+            throw new ForbiddenException("Acesso negado ao job de importação");
+        }
+
+        if (job.getStatus() == ImportJobStatus.DONE && job.getResultJson() != null) {
+            try {
+                StatementImportResponse result =
+                        objectMapper.readValue(job.getResultJson(), StatementImportResponse.class);
+                return new ImportJobStatusResponse(job.getStatus().name(), result);
+            } catch (Exception e) {
+                log.error("[Statement] Erro ao deserializar resultado do job {}: {}", jobId, e.getMessage());
+            }
+        }
+
+        return new ImportJobStatusResponse(job.getStatus().name(), null);
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // PRIVADO: chama o microserviço Python com os bytes do arquivo
+    // ════════════════════════════════════════════════════════════════════════
+
+    private JsonNode callPythonServiceWithBytes(byte[] fileBytes, String filename) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
+            ByteArrayResource fileResource = new ByteArrayResource(fileBytes) {
                 @Override
                 public String getFilename() {
-                    return file.getOriginalFilename();
+                    return filename;
                 }
             };
 
@@ -171,7 +302,7 @@ public class StatementService {
             return objectMapper.readTree(response.getBody());
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao comunicar com o serviço Python: " + e.getMessage());
+            throw new RuntimeException("Erro ao comunicar com o serviço Python: " + e.getMessage(), e);
         }
     }
 }
