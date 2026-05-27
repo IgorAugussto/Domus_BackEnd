@@ -36,6 +36,8 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -76,7 +78,16 @@ public class StatementService {
                     .build();
 
             importJobRepository.save(job);
-            statementImportProducer.sendImportJob(jobId);
+
+            // Publica no RabbitMQ somente após o commit da transação.
+            // Se publicado dentro da tx, o consumer pode receber a mensagem antes
+            // do commit e não encontrar o job no banco (race condition).
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    statementImportProducer.sendImportJob(jobId);
+                }
+            });
 
             log.info("[Statement] Job enfileirado → jobId={}, user={}, arquivo={}",
                     jobId, userEmail, file.getOriginalFilename());
