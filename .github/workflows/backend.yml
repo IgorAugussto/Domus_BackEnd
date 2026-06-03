@@ -50,18 +50,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build with Maven
-        run: |
-          cd domus
-          mvn clean package -DskipTests
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Image
-        run: |
-          cd domus
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest .
-
-      - name: Push Docker Image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./domus
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy na EC2
         uses: appleboy/ssh-action@v1.0.3
