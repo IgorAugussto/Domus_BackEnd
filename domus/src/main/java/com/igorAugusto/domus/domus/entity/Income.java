@@ -25,7 +25,7 @@ public class Income {
     private Long id;
 
     @Column(nullable = false)
-    private BigDecimal value;  // ✅ Use BigDecimal para dinheiro!
+    private BigDecimal value;  //  Use BigDecimal para dinheiro!
 
     @Column(nullable = false)
     private String description;  // Ex: "Salário de Novembro"

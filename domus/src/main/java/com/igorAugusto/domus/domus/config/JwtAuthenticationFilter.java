@@ -3,6 +3,7 @@ package com.igorAugusto.domus.domus.config;
 import com.igorAugusto.domus.domus.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,29 +32,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // Libera rotas de login/register
-        if (request.getRequestURI().startsWith("/api/auth/")) {
+        String jwt = extractJwtFromCookie(request);
+
+        // Fallback: Authorization header (compatibilidade com Postman/testes)
+        if (jwt == null) {
+            final String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                jwt = authHeader.substring(7);
+            }
+        }
+
+        if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        final String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        final String jwt = authHeader.substring(7);
         final String userEmail = jwtService.extractUsername(jwt);
-
-        System.out.println("AUTH HEADER: " + authHeader);
-        System.out.println("JWT: " + jwt);
-        System.out.println("Email extraído: " + userEmail);
-        System.out.println("AUTH HEADER: " + authHeader);
-        System.out.println("JWT: " + jwt);
-        System.out.println("Email extraído: " + userEmail);
-
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
@@ -67,5 +61,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String extractJwtFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+
+        for (Cookie cookie : cookies) {
+            if ("jwt".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

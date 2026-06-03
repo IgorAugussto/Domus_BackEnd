@@ -19,7 +19,7 @@ public class InvestmentsResponse {
     private LocalDateTime createdAt;
     private LocalDate startDate;
     private LocalDate endDate;
-    private double expectedReturn;
+    private BigDecimal expectedReturn;
     private String description;
 
 }

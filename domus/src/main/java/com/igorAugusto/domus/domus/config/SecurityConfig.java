@@ -41,7 +41,7 @@ public class SecurityConfig {
                 // Configura autorização
                 .authorizeHttpRequests(auth -> auth
                         // Rotas públicas (não precisa token)
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
 
                         // Todas as outras rotas precisam de autenticação
                         .anyRequest().authenticated())
@@ -79,7 +79,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList(
-                "https://domus-front-end.vercel.app",
                 "https://d3r6rgf1tqyenv.cloudfront.net",
                 "https://domusapp.dev.br",
                 "http://localhost:5173",

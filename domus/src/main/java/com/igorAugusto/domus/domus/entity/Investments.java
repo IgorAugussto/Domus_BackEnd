@@ -23,7 +23,7 @@ public class Investments {
     private Long id;
 
     @Column(nullable = false)
-    private BigDecimal value;  // ✅ Use BigDecimal para dinheiro!
+    private BigDecimal value;  //  Use BigDecimal para dinheiro!
 
     @Column(nullable = false)
     private String typeInvestments;  // Ex: "ITAUSA4"
@@ -34,14 +34,14 @@ public class Investments {
     @Column(nullable = false)
     private LocalDate endDate;
 
-    @Column(nullable = false)
-    private double expectedReturn;
+    @Column(nullable = false, precision = 10, scale = 4)
+    private BigDecimal expectedReturn;
 
     private String description;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;  // ✅ Cada receita pertence a um usuário
+    private User user;  //  Cada receita pertence a um usuário
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

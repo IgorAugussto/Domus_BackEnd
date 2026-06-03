@@ -67,7 +67,7 @@ class InvestmentsControllerTest {
                 LocalDate.of(2026, 1, 1),
                 LocalDate.of(2027, 1, 1),
                 "Ação Itaúsa",
-                12.5
+                BigDecimal.valueOf(12.5)
         );
 
         investmentsResponse = new InvestmentsResponse(
@@ -77,7 +77,7 @@ class InvestmentsControllerTest {
                 LocalDateTime.now(),
                 LocalDate.of(2026, 1, 1),
                 LocalDate.of(2027, 1, 1),
-                12.5,
+                BigDecimal.valueOf(12.5),
                 "Ação Itaúsa"
         );
     }

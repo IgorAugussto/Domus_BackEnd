@@ -1,6 +1,7 @@
 package com.igorAugusto.domus.domus.controller;
 
-import com.igorAugusto.domus.domus.dto.StatementImportResponse;
+import com.igorAugusto.domus.domus.dto.ImportJobStatusResponse;
+import com.igorAugusto.domus.domus.dto.StatementJobResponse;
 import com.igorAugusto.domus.domus.service.StatementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +19,17 @@ public class StatementController {
 
     /**
      * POST /api/statement/import
-     * Recebe o arquivo CSV ou OFX e a data de vencimento do frontend,
-     * envia para o Python processar e salva no banco como despesas.
+     *
+     * Recebe o arquivo CSV/OFX/PDF e a data de vencimento.
+     * Persiste o arquivo no banco, publica no RabbitMQ e responde IMEDIATAMENTE
+     * com 202 Accepted + { jobId }.
+     *
+     * O cliente usa o jobId para fazer polling em /api/statement/status/{jobId}.
      */
     @PostMapping("/import")
-    public ResponseEntity<StatementImportResponse> importStatement(
+    public ResponseEntity<StatementJobResponse> importStatement(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("dueDate") String dueDate, // ✅ data de vencimento
+            @RequestParam("dueDate") String dueDate,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         if (file.isEmpty()) {
@@ -43,12 +48,26 @@ public class StatementController {
             return ResponseEntity.badRequest().build();
         }
 
-        StatementImportResponse response = statementService.importStatement(
-                file,
-                dueDate,
-                userDetails.getUsername()
-        );
+        String jobId = statementService.enqueueImport(file, dueDate, userDetails.getUsername());
 
-        return ResponseEntity.ok(response);
+        // 202 Accepted: requisição aceita, processamento ocorre em background
+        return ResponseEntity.accepted().body(new StatementJobResponse(jobId));
+    }
+
+    /**
+     * GET /api/statement/status/{jobId}
+     *
+     * Polling do frontend para verificar o andamento do job.
+     * Retorna o status atual e, quando DONE, o resultado completo.
+     *
+     * Segurança: validado que o jobId pertence ao usuário autenticado.
+     */
+    @GetMapping("/status/{jobId}")
+    public ResponseEntity<ImportJobStatusResponse> getImportStatus(
+            @PathVariable String jobId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        ImportJobStatusResponse status = statementService.getJobStatus(jobId, userDetails.getUsername());
+        return ResponseEntity.ok(status);
     }
 }

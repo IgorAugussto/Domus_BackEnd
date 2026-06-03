@@ -42,12 +42,12 @@ public class JwtService {
                 .compact();
     }
 
-    // 2️⃣ EXTRAIR EMAIL DO TOKEN
+    // 2️ EXTRAIR EMAIL DO TOKEN
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // 3️⃣ VALIDAR TOKEN
+    // 3️ VALIDAR TOKEN
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));

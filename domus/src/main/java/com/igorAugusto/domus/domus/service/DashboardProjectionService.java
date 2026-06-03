@@ -33,7 +33,7 @@ public class DashboardProjectionService {
     // ============================
     /**
      * ============================
-     * 🔥 NOVO MÉTODO - ANO CALENDÁRIO FIXO
+     *  NOVO MÉTODO - ANO CALENDÁRIO FIXO
      * ============================
      * Retorna SEMPRE os 12 meses de um ano específico (Jan–Dez).
      * Não usa rolling year (YearMonth.now().plusMonths()).
@@ -113,8 +113,7 @@ public class DashboardProjectionService {
         for (Investments inv : investments) {
             BigDecimal initialValue = inv.getValue();
 
-            BigDecimal monthlyRate = BigDecimal
-                    .valueOf(inv.getExpectedReturn())
+            BigDecimal monthlyRate = inv.getExpectedReturn()
                     .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
                     .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
 
@@ -210,7 +209,7 @@ public class DashboardProjectionService {
 
         /*
          * ============================
-         * 4️⃣ INVESTMENTS (🔥 PARTE QUE FALTAVA 🔥)
+         * 4️⃣ INVESTMENTS (PARTE QUE FALTAVA)
          * ============================
          */
         List<Investments> investments = investmentsRepository.findAllByUserId(userId);
@@ -219,8 +218,7 @@ public class DashboardProjectionService {
 
             BigDecimal initialValue = inv.getValue();
 
-            BigDecimal monthlyRate = BigDecimal
-                    .valueOf(inv.getExpectedReturn())
+            BigDecimal monthlyRate = inv.getExpectedReturn()
                     .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
                     .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
 
@@ -321,15 +319,14 @@ public class DashboardProjectionService {
             }
         }
 
-        // 4️⃣ INVESTIMENTOS (🔥 PARTE NOVA 🔥)
+        // 4️⃣ INVESTIMENTOS
         List<Investments> investments = investmentsRepository.findAllByUserId(userId);
 
         for (Investments inv : investments) {
 
             BigDecimal initialValue = inv.getValue();
 
-            BigDecimal monthlyRate = BigDecimal
-                    .valueOf(inv.getExpectedReturn())
+            BigDecimal monthlyRate = inv.getExpectedReturn()
                     .divide(BigDecimal.valueOf(100), MathContext.DECIMAL64)
                     .divide(BigDecimal.valueOf(12), MathContext.DECIMAL64);
 
