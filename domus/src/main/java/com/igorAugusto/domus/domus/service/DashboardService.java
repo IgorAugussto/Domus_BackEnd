@@ -43,7 +43,7 @@ public class DashboardService {
 
                 BigDecimal totalInvestments = defaultZero(investmentsRepository.sumByUserId(user.getId()));
 
-                // 🔥 GANHO REAL DE INVESTIMENTOS (expectedReturn)
+                //  GANHO REAL DE INVESTIMENTOS (expectedReturn)
                 List<Investments> investments = investmentsRepository.findAllByUserId(user.getId());
 
                 BigDecimal investmentGains = investments.stream()
@@ -78,7 +78,7 @@ public class DashboardService {
                 List<MonthlyProjectionResponse> projection =
                         dashboardProjectionService.projectFixedYear(userId, year);
 
-                // 🔥 ordena por mês (garantia)
+                //  ordena por mês (garantia)
                 projection.sort(Comparator.comparing(MonthlyProjectionResponse::getMonth));
 
                 BigDecimal accumulatedBalance = BigDecimal.ZERO;

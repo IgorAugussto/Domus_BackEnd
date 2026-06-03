@@ -33,7 +33,7 @@ public class DashboardProjectionService {
     // ============================
     /**
      * ============================
-     * 🔥 NOVO MÉTODO - ANO CALENDÁRIO FIXO
+     *  NOVO MÉTODO - ANO CALENDÁRIO FIXO
      * ============================
      * Retorna SEMPRE os 12 meses de um ano específico (Jan–Dez).
      * Não usa rolling year (YearMonth.now().plusMonths()).
@@ -209,7 +209,7 @@ public class DashboardProjectionService {
 
         /*
          * ============================
-         * 4️⃣ INVESTMENTS (🔥 PARTE QUE FALTAVA 🔥)
+         * 4️⃣ INVESTMENTS (PARTE QUE FALTAVA)
          * ============================
          */
         List<Investments> investments = investmentsRepository.findAllByUserId(userId);
@@ -319,7 +319,7 @@ public class DashboardProjectionService {
             }
         }
 
-        // 4️⃣ INVESTIMENTOS (🔥 PARTE NOVA 🔥)
+        // 4️⃣ INVESTIMENTOS
         List<Investments> investments = investmentsRepository.findAllByUserId(userId);
 
         for (Investments inv : investments) {

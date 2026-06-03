@@ -25,7 +25,7 @@ public class Outgoing {
     private Long id;
 
     @Column(nullable = false)
-    private BigDecimal value;  // ✅ Valor da despesa
+    private BigDecimal value;  //  Valor da despesa
 
     @Column(nullable = false)
     private String description;  // Ex: "Conta de Luz"
@@ -42,16 +42,16 @@ public class Outgoing {
     @Column
     private String category;  // Ex: "Alimentação", "Transporte", "Lazer"
 
-    @Column(name = "payment_type")          // ✅ adicionado
+    @Column(name = "payment_type")          //  adicionado
     private String paymentType;
 
-    @Column(nullable = false)               // ✅ adicionado
+    @Column(nullable = false)               //  adicionado
     @Builder.Default
     private Boolean paid = false;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;  // ✅ Cada despesa pertence a um usuário
+    private User user;  //  Cada despesa pertence a um usuário
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
