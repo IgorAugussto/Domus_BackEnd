@@ -13,6 +13,23 @@ spring:
             password: ${SSL_KEYSTORE_PASSWORD}
             type: PKCS12
 
+  flyway:
+    clean-disabled: true  # NUNCA apaga dados em produção
+
+  # ── RabbitMQ (produção — EC2) ────────────────────────────────────────────────
+  # Em produção o RabbitMQ roda na mesma instância EC2 que o Java e o Python.
+  # Instale via: sudo apt install rabbitmq-server && sudo systemctl enable rabbitmq-server
+  # Variáveis obrigatórias em produção (definir como env vars na EC2 ou no script de deploy):
+  #   RABBITMQ_HOST     → "localhost" se no mesmo servidor (recomendado), ou IP externo
+  #   RABBITMQ_USERNAME → usuário criado no RabbitMQ (não usar "guest" em prod!")
+  #   RABBITMQ_PASSWORD → senha forte
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+
 server:
   port: 8443
   ssl:
@@ -22,21 +39,3 @@ app:
   demo-mode: true
   cookie:
     secure: true
-
-spring:
-  flyway:
-    clean-disabled: true  # NUNCA apaga dados em produção
-
-  # ── RabbitMQ (produção — EC2) ────────────────────────────────────────────────
-  # Em produção o RabbitMQ roda na mesma instância EC2 que o Java e o Python.
-  # Instale via: sudo apt install rabbitmq-server && sudo systemctl enable rabbitmq-server
-  # Variáveis obrigatórias em produção (definir como env vars na EC2 ou no script de deploy):
-  #   RABBITMQ_HOST     → "localhost" se no mesmo servidor (recomendado), ou IP externo
-  #   RABBITMQ_USERNAME → usuário criado no RabbitMQ (não usar "guest" em prod!)
-  #   RABBITMQ_PASSWORD → senha forte
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-    virtual-host: /
