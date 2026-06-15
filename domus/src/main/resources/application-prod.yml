@@ -17,12 +17,12 @@ spring:
     clean-disabled: true  # NUNCA apaga dados em produção
 
   # ── RabbitMQ (produção — EC2) ────────────────────────────────────────────────
-  # Em produção o RabbitMQ roda na mesma instância EC2 que o Java e o Python.
-  # Instale via: sudo apt install rabbitmq-server && sudo systemctl enable rabbitmq-server
-  # Variáveis obrigatórias em produção (definir como env vars na EC2 ou no script de deploy):
-  #   RABBITMQ_HOST     → "localhost" se no mesmo servidor (recomendado), ou IP externo
-  #   RABBITMQ_USERNAME → usuário criado no RabbitMQ (não usar "guest" em prod!")
-  #   RABBITMQ_PASSWORD → senha forte
+  # Em produção o RabbitMQ roda como container Docker na mesma rede (domus-net).
+  # O backend resolve o host pelo nome do container: RABBITMQ_HOST=rabbitmq
+  # Variáveis injetadas pelo GitHub Actions (secrets):
+  #   RABBITMQ_HOST     → "rabbitmq" (nome do container na rede domus-net)
+  #   RABBITMQ_USERNAME → secret RABBITMQ_USERNAME
+  #   RABBITMQ_PASSWORD → secret RABBITMQ_PASSWORD
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}

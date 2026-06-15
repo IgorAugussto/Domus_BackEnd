@@ -69,7 +69,31 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "Parando container antigo..."
+            # ── Rede interna entre os containers ─────────────────────────────
+            docker network inspect domus-net >/dev/null 2>&1 || docker network create domus-net
+
+            # ── RabbitMQ: sobe apenas se não estiver rodando ──────────────────
+            if ! docker ps --format '{{.Names}}' | grep -q '^rabbitmq$'; then
+              echo "Subindo RabbitMQ..."
+              docker stop rabbitmq || true
+              docker rm rabbitmq || true
+              docker run -d \
+                --restart always \
+                --network domus-net \
+                --name rabbitmq \
+                -e RABBITMQ_DEFAULT_USER=${{ secrets.RABBITMQ_USERNAME }} \
+                -e RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_PASSWORD }} \
+                -v rabbitmq_data:/var/lib/rabbitmq \
+                rabbitmq:3
+              echo "Aguardando RabbitMQ inicializar..."
+              sleep 20
+            else
+              echo "RabbitMQ ja esta rodando."
+              docker network connect domus-net rabbitmq 2>/dev/null || true
+            fi
+
+            # ── Backend: para, remove e recria ───────────────────────────────
+            echo "Parando container antigo do backend..."
             docker stop domus-backend || true
             docker rm domus-backend || true
 
@@ -79,14 +103,25 @@ jobs:
             echo "Baixando nova imagem..."
             docker pull ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
 
-            echo "Subindo novo container..."
+            echo "Subindo novo container do backend..."
             docker run -d \
               --restart always \
+              --network domus-net \
               -p 8443:8443 \
               -e SPRING_PROFILES_ACTIVE=prod \
               -e SUPABASE_DB_PASSWORD=${{ secrets.SUPABASE_DB_PASSWORD }} \
+              -e SSL_KEYSTORE_PASSWORD=${{ secrets.SSL_KEYSTORE_PASSWORD }} \
               -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
               -e JWT_EXPIRATION=3600000 \
+              -e APP_ADMIN_LOGIN=${{ secrets.APP_ADMIN_LOGIN }} \
+              -e APP_ADMIN_PASSWORD=${{ secrets.APP_ADMIN_PASSWORD }} \
+              -e APP_DEMO_PASSWORD=${{ secrets.APP_DEMO_PASSWORD }} \
+              -e STATEMENT_SERVICE_URL=http://domus-extrato:5000 \
+              -e RABBITMQ_HOST=rabbitmq \
+              -e RABBITMQ_PORT=5672 \
+              -e RABBITMQ_USERNAME=${{ secrets.RABBITMQ_USERNAME }} \
+              -e RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }} \
+              -v /keystore/keystore.p12:/keystore/keystore.p12 \
               --name domus-backend \
               ${{ secrets.DOCKER_USERNAME }}/domus-backend:latest
 
