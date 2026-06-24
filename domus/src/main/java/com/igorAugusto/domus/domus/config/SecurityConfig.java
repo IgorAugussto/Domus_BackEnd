@@ -41,7 +41,7 @@ public class SecurityConfig {
                 // Configura autorização
                 .authorizeHttpRequests(auth -> auth
                         // Rotas públicas (não precisa token)
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout", "/actuator/**").permitAll()
 
                         // Todas as outras rotas precisam de autenticação
                         .anyRequest().authenticated())
