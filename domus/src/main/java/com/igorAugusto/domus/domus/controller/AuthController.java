@@ -62,7 +62,7 @@ public class AuthController {
                 .secure(cookieSecure)
                 .path("/")
                 .maxAge(0)
-                .sameSite("None")
+                .sameSite("Lax")
                 .build();
 
         return ResponseEntity.ok()
@@ -82,7 +82,7 @@ public class AuthController {
                 .secure(cookieSecure)
                 .path("/")
                 .maxAge(Duration.ofMillis(jwtExpiration))
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
     }
 }
