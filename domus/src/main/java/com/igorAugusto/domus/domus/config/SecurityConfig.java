@@ -82,7 +82,9 @@ public class SecurityConfig {
                 "https://d3r6rgf1tqyenv.cloudfront.net",
                 "https://domusapp.dev.br",
                 "http://localhost:5173",
-                "http://18.221.218.62:8080"
+                "http://18.221.218.62:8080",
+                "https://api.domusapp.dev.br",
+                "https://domusapp.dev.br:8443"
 
         )); // permite qualquer origem (ou coloque "http://localhost:5173")
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
