@@ -3,3 +3,7 @@ spring:
     url: jdbc:postgresql://localhost:5432/domus_db   # ou ${POSTGRES_DB} se preferir usar variável
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+
+app:
+  cookie:
+    domain: ""   # vazio em dev — cookie fica no localhost apenas
