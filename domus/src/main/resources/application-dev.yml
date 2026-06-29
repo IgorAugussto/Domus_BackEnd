@@ -4,6 +4,3 @@ spring:
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
 
-app:
-  cookie:
-    domain: ""   # vazio em dev — cookie fica no localhost apenas

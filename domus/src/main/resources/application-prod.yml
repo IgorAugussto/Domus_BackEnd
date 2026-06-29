@@ -39,4 +39,3 @@ app:
   demo-mode: true
   cookie:
     secure: true
-    domain: .domusapp.dev.br
