@@ -33,6 +33,9 @@ public class AuthController {
     @Value("${app.cookie.secure:false}")
     private boolean cookieSecure;
 
+    @Value("${app.cookie.domain:}")
+    private String cookieDomain;
+
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         AuthResponse authResponse = authService.login(request);
@@ -77,12 +80,17 @@ public class AuthController {
     }
 
     private ResponseCookie buildJwtCookie(String token) {
-        return ResponseCookie.from("jwt", token)
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
                 .secure(cookieSecure)
                 .path("/")
                 .maxAge(Duration.ofMillis(jwtExpiration))
-                .sameSite("None")
-                .build();
+                .sameSite("None");
+
+        if (cookieDomain != null && !cookieDomain.isBlank()) {
+            builder.domain(cookieDomain);
+        }
+
+        return builder.build();
     }
 }
