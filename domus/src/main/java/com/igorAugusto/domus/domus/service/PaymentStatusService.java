@@ -58,7 +58,8 @@ public class PaymentStatusService {
                             outgoing.getFrequency(),
                             outgoing.getStartDate().toString(),
                             yearMonth,
-                            paid
+                            paid,
+                            outgoing.getCreditCard() != null ? outgoing.getCreditCard().getId() : null
                     );
                 })
                 .toList();
@@ -100,7 +101,8 @@ public class PaymentStatusService {
                 outgoing.getFrequency(),
                 outgoing.getStartDate().toString(),
                 yearMonth,
-                paid
+                paid,
+                outgoing.getCreditCard() != null ? outgoing.getCreditCard().getId() : null
         );
     }
 

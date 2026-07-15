@@ -34,6 +34,9 @@ public class ImportJob {
     @Column(name = "due_date", nullable = false, length = 10)
     private String dueDate;
 
+    @Column(name = "credit_card_id")
+    private Long creditCardId;
+
     /** Bytes brutos do arquivo CSV / OFX / PDF enviado pelo usuário. */
     @Column(name = "file_bytes", nullable = false, columnDefinition = "bytea")
     private byte[] fileBytes;

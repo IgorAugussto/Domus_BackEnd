@@ -8,6 +8,7 @@ import com.igorAugusto.domus.domus.enums.Frequency;
 import com.igorAugusto.domus.domus.exception.BusinessException;
 import com.igorAugusto.domus.domus.exception.ForbiddenException;
 import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
+import com.igorAugusto.domus.domus.repository.CreditCardRepository;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,9 @@ class OutgoingServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private CreditCardRepository creditCardRepository;
 
     @InjectMocks
     private OutgoingService outgoingService;
@@ -74,7 +78,7 @@ class OutgoingServiceTest {
     void createOutgoing_success() {
         OutgoingRequest request = new OutgoingRequest(
                 BigDecimal.valueOf(100.00), "Aluguel", LocalDate.now(),
-                12, Frequency.MONTHLY, "Moradia", "Boleto", false
+                12, Frequency.MONTHLY, "Moradia", "Boleto", false, null
         );
 
         when(userRepository.findByEmail("test@domus.app")).thenReturn(Optional.of(user));
@@ -92,7 +96,7 @@ class OutgoingServiceTest {
     void createOutgoing_userNotFound_throwsResourceNotFoundException() {
         OutgoingRequest request = new OutgoingRequest(
                 BigDecimal.valueOf(100.00), "Aluguel", LocalDate.now(),
-                12, Frequency.MONTHLY, "Moradia", "Boleto", false
+                12, Frequency.MONTHLY, "Moradia", "Boleto", false, null
         );
 
         when(userRepository.findByEmail("unknown@domus.app")).thenReturn(Optional.empty());
@@ -108,7 +112,7 @@ class OutgoingServiceTest {
     void createOutgoing_monthlyWithoutDuration_throwsBusinessException() {
         OutgoingRequest request = new OutgoingRequest(
                 BigDecimal.valueOf(100.00), "Aluguel", LocalDate.now(),
-                null, Frequency.MONTHLY, "Moradia", "Boleto", false
+                null, Frequency.MONTHLY, "Moradia", "Boleto", false, null
         );
 
         when(userRepository.findByEmail("test@domus.app")).thenReturn(Optional.of(user));
@@ -122,7 +126,7 @@ class OutgoingServiceTest {
     void createOutgoing_oneTime_setsDurationToOne() {
         OutgoingRequest request = new OutgoingRequest(
                 BigDecimal.valueOf(50.00), "Compra única", LocalDate.now(),
-                null, Frequency.ONE_TIME, "Lazer", null, true
+                null, Frequency.ONE_TIME, "Lazer", null, true, null
         );
 
         Outgoing oneTimeOutgoing = Outgoing.builder()
@@ -160,7 +164,7 @@ class OutgoingServiceTest {
 
         OutgoingRequest request = new OutgoingRequest(
                 BigDecimal.valueOf(200.00), "Aluguel", LocalDate.now(),
-                12, Frequency.MONTHLY, "Moradia", "Boleto", false
+                12, Frequency.MONTHLY, "Moradia", "Boleto", false, null
         );
 
         when(userRepository.findByEmail("test@domus.app")).thenReturn(Optional.of(user));

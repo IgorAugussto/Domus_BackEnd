@@ -71,7 +71,8 @@ class OutgoingControllerTest {
                 Frequency.MONTHLY,
                 "Moradia",
                 "Boleto",
-                false
+                false,
+                null
         );
 
         outgoingResponse = new OutgoingResponse(
@@ -84,7 +85,8 @@ class OutgoingControllerTest {
                 LocalDateTime.now(),
                 Frequency.MONTHLY,
                 "Boleto",
-                false
+                false,
+                null
         );
     }
 

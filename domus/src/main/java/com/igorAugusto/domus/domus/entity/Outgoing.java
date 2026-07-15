@@ -64,6 +64,10 @@ public class Outgoing {
     @Column(name = "transaction_date")
     private LocalDate transactionDate;
 
+    @ManyToOne
+    @JoinColumn(name = "credit_card_id")
+    private CreditCard creditCard;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

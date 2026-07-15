@@ -21,4 +21,5 @@ public class PaymentMonthResponse {
     private String startDate;
     private String yearMonth;
     private Boolean paid;
+    private Long creditCardId;
 }
