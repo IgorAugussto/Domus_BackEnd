@@ -23,4 +23,5 @@ public class OutgoingResponse {
     private Frequency frequency;
     private String paymentType;
     private Boolean paid;
+    private Long creditCardId;
 }

@@ -30,6 +30,7 @@ public class StatementController {
     public ResponseEntity<StatementJobResponse> importStatement(
             @RequestParam("file") MultipartFile file,
             @RequestParam("dueDate") String dueDate,
+            @RequestParam(value = "creditCardId", required = false) Long creditCardId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         if (file.isEmpty()) {
@@ -48,7 +49,7 @@ public class StatementController {
             return ResponseEntity.badRequest().build();
         }
 
-        String jobId = statementService.enqueueImport(file, dueDate, userDetails.getUsername());
+        String jobId = statementService.enqueueImport(file, dueDate, creditCardId, userDetails.getUsername());
 
         // 202 Accepted: requisição aceita, processamento ocorre em background
         return ResponseEntity.accepted().body(new StatementJobResponse(jobId));

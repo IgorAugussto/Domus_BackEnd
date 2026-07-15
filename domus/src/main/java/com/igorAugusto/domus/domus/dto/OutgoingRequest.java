@@ -33,4 +33,6 @@ public class OutgoingRequest {
     private String paymentType;
 
     private Boolean paid;
+
+    private Long creditCardId;
 }

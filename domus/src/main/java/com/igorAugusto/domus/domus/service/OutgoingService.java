@@ -2,12 +2,14 @@ package com.igorAugusto.domus.domus.service;
 
 import com.igorAugusto.domus.domus.dto.OutgoingRequest;
 import com.igorAugusto.domus.domus.dto.OutgoingResponse;
+import com.igorAugusto.domus.domus.entity.CreditCard;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.User;
 import com.igorAugusto.domus.domus.enums.Frequency;
 import com.igorAugusto.domus.domus.exception.BusinessException;
 import com.igorAugusto.domus.domus.exception.ForbiddenException;
 import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
+import com.igorAugusto.domus.domus.repository.CreditCardRepository;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class OutgoingService {
 
         private final OutgoingRepository outgoingRepository;
         private final UserRepository userRepository;
+        private final CreditCardRepository creditCardRepository;
 
         @Transactional
         public OutgoingResponse createOutgoing(OutgoingRequest request, String userEmail) {
@@ -56,10 +59,26 @@ public class OutgoingService {
                                 .frequency(request.getFrequency())
                                 .paymentType(request.getPaymentType())
                                 .paid(request.getPaid() != null ? request.getPaid() : false)
+                                .creditCard(resolveCreditCard(request.getCreditCardId(), user))
                                 .user(user)
                                 .build();
 
                 return convertToResponse(outgoingRepository.save(outgoing));
+        }
+
+        private CreditCard resolveCreditCard(Long creditCardId, User user) {
+                if (creditCardId == null) {
+                        return null;
+                }
+
+                CreditCard creditCard = creditCardRepository.findById(creditCardId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Cartão não encontrado"));
+
+                if (!creditCard.getUser().getId().equals(user.getId())) {
+                        throw new ForbiddenException("Acesso negado");
+                }
+
+                return creditCard;
         }
 
         @Transactional(readOnly = true)
@@ -100,6 +119,7 @@ public class OutgoingService {
                 outgoing.setCategory(request.getCategory());
                 outgoing.setPaymentType(request.getPaymentType());
                 outgoing.setPaid(request.getPaid() != null ? request.getPaid() : false);
+                outgoing.setCreditCard(resolveCreditCard(request.getCreditCardId(), user));
 
                 return convertToResponse(outgoingRepository.save(outgoing));
         }
@@ -186,7 +206,8 @@ public class OutgoingService {
                                 outgoing.getCreatedAt(),
                                 outgoing.getFrequency(),
                                 outgoing.getPaymentType(),
-                                outgoing.getPaid()
+                                outgoing.getPaid(),
+                                outgoing.getCreditCard() != null ? outgoing.getCreditCard().getId() : null
                 );
         }
 }

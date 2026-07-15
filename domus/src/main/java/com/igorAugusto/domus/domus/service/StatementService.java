@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.igorAugusto.domus.domus.dto.ImportJobStatusResponse;
 import com.igorAugusto.domus.domus.dto.StatementImportResponse;
+import com.igorAugusto.domus.domus.entity.CreditCard;
 import com.igorAugusto.domus.domus.entity.ImportJob;
 import com.igorAugusto.domus.domus.entity.Outgoing;
 import com.igorAugusto.domus.domus.entity.User;
@@ -12,6 +13,7 @@ import com.igorAugusto.domus.domus.enums.ImportJobStatus;
 import com.igorAugusto.domus.domus.exception.ForbiddenException;
 import com.igorAugusto.domus.domus.exception.ResourceNotFoundException;
 import com.igorAugusto.domus.domus.messaging.StatementImportProducer;
+import com.igorAugusto.domus.domus.repository.CreditCardRepository;
 import com.igorAugusto.domus.domus.repository.ImportJobRepository;
 import com.igorAugusto.domus.domus.repository.OutgoingRepository;
 import com.igorAugusto.domus.domus.repository.UserRepository;
@@ -47,6 +49,7 @@ public class StatementService {
     private final OutgoingRepository outgoingRepository;
     private final UserRepository userRepository;
     private final ImportJobRepository importJobRepository;
+    private final CreditCardRepository creditCardRepository;
     private final StatementImportProducer statementImportProducer;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper; // injetado pelo Spring Boot (já configurado)
@@ -63,7 +66,7 @@ public class StatementService {
      * o jobId no RabbitMQ. Retorna o jobId imediatamente (não bloqueia o usuário).
      */
     @Transactional
-    public String enqueueImport(MultipartFile file, String dueDate, String userEmail) {
+    public String enqueueImport(MultipartFile file, String dueDate, Long creditCardId, String userEmail) {
         try {
             String jobId = UUID.randomUUID().toString();
 
@@ -71,6 +74,7 @@ public class StatementService {
                     .id(jobId)
                     .userEmail(userEmail)
                     .dueDate(dueDate)
+                    .creditCardId(creditCardId)
                     .fileBytes(file.getBytes())
                     .originalFilename(file.getOriginalFilename())
                     .status(ImportJobStatus.PENDING)
@@ -133,6 +137,15 @@ public class StatementService {
                         "Usuário não encontrado: " + job.getUserEmail()));
 
         LocalDate startDate     = LocalDate.parse(job.getDueDate());
+
+        CreditCard creditCard = null;
+        if (job.getCreditCardId() != null) {
+            creditCard = creditCardRepository.findById(job.getCreditCardId()).orElse(null);
+            if (creditCard != null && !creditCard.getUser().getId().equals(user.getId())) {
+                creditCard = null;
+            }
+        }
+
         JsonNode pythonResponse = callPythonServiceWithBytes(job.getFileBytes(), job.getOriginalFilename());
         JsonNode transactions   = pythonResponse.get("transacoes");
         int total               = pythonResponse.get("total").asInt();
@@ -208,6 +221,7 @@ public class StatementService {
                         .paid(paid)
                         .importHash(importHash)
                         .transactionDate(transactionDate)
+                        .creditCard(creditCard)
                         .user(user)
                         .build();
 
