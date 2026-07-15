@@ -80,8 +80,10 @@ public class AuthController {
     }
 
     private ResponseCookie buildJwtCookie(String token) {
-        // SameSite=None exige Secure=true (regra dos navegadores); em dev (HTTP, sem TLS)
-        // isso faz o cookie ser descartado silenciosamente, então usamos Lax nesse caso.
+        // SameSite=None exige Secure (senão o navegador descarta o cookie).
+        // Em dev (cookieSecure=false, HTTP puro) usamos Lax: front (5173) e
+        // back (8080) são portas diferentes do mesmo localhost, então o
+        // navegador já trata como "mesmo site" e Lax funciona sem HTTPS.
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
                 .secure(cookieSecure)
